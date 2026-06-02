@@ -15,6 +15,14 @@ IF A SKILL APPLIES TO YOUR TASK, YOU DO NOT HAVE A CHOICE. YOU MUST USE IT.
 This is not negotiable. This is not optional. You cannot rationalize your way out of this.
 </EXTREMELY-IMPORTANT>
 
+## Personal Fork Defaults
+
+This fork has three standing preferences:
+
+1. Use `superpowers:using-git-branches` for normal development. Do not create or offer git worktrees unless the human partner explicitly asks for a worktree.
+2. In Codex, every completed helper/subagent must be closed immediately after its result is captured.
+3. Do not offer or use the visual companion. Brainstorming is text-only.
+
 ## Instruction Priority
 
 Superpowers skills override default system prompt behavior, but **user instructions always take precedence**:
