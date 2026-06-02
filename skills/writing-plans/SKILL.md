@@ -13,7 +13,7 @@ Assume the implementer is a skilled developer, but knows almost nothing about ou
 
 **Announce at start:** "I'm using the writing-plans skill to create the implementation plan."
 
-**Context:** If working in an isolated worktree, it should have been created via the `superpowers:using-git-worktrees` skill at execution time.
+**Context:** Before execution, branch state should be checked with `superpowers:using-git-branches`. Work happens in the current checkout unless the human partner explicitly asked for a worktree.
 
 **Save plans to:** `docs/superpowers/plans/YYYY-MM-DD-<feature-name>/overview.md`
 - Put task details in sibling `task-NNN-<name>.md` files for non-trivial plans.
@@ -266,6 +266,8 @@ If you use skeletal or referenced density, explain why and make verification esp
 After writing the complete plan, use `superpowers:reviewing-plans` before execution.
 
 If the platform supports subagents, dispatch fresh read-only reviewers with only the approved spec, context pack, plan directory, and relevant repo files. Do not let the same plan-author be the only reviewer.
+
+After each reviewer returns a terminal result, capture the receipt and close that subagent immediately. If re-review is needed, dispatch a fresh reviewer with the changed sections and prior receipt.
 
 Minimum checks:
 
