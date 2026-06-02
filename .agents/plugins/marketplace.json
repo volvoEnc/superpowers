@@ -1,0 +1,20 @@
+{
+  "name": "superpowers-dev",
+  "interface": {
+    "displayName": "Superpowers Dev"
+  },
+  "plugins": [
+    {
+      "name": "superpowers-personal",
+      "source": {
+        "source": "local",
+        "path": "./plugins/superpowers-personal"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}
