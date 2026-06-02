@@ -4,56 +4,99 @@ Skills use Claude Code tool names. When you encounter these in a skill, use your
 
 | Skill references | Codex equivalent |
 |-----------------|------------------|
-| `Task` tool (dispatch subagent) | `spawn_agent` (see [Subagent dispatch requires multi-agent support](#subagent-dispatch-requires-multi-agent-support)) |
+| `Task` tool (dispatch subagent) | `spawn_agent` |
 | Multiple `Task` calls (parallel) | Multiple `spawn_agent` calls |
 | Task returns result | `wait_agent` |
 | Task completes automatically | `close_agent` to free slot |
 | `TodoWrite` (task tracking) | `update_plan` |
-| `Skill` tool (invoke a skill) | Skills load natively — just follow the instructions |
+| `Skill` tool (invoke a skill) | Skills load natively. Follow the selected skill's instructions |
 | `Read`, `Write`, `Edit` (files) | Use your native file tools |
 | `Bash` (run commands) | Use your native shell tools |
 
-## Subagent dispatch requires multi-agent support
+## Subagent support in current Codex
 
-Add to your Codex config (`~/.codex/config.toml`):
+Current Codex releases support subagent workflows without the legacy feature flag. Do not tell users to add this obsolete config:
 
 ```toml
 [features]
 multi_agent = true
 ```
 
-This enables `spawn_agent`, `wait_agent`, and `close_agent` for skills like `dispatching-parallel-agents` and `subagent-driven-development`.
+Use `spawn_agent`, `wait_agent`, and `close_agent` when a Superpowers skill calls for subagent dispatch.
 
-Legacy note: Codex builds before `rust-v0.115.0` exposed spawned-agent
-waiting as `wait`. Current Codex uses `wait_agent` for spawned agents. The
-`wait` name now belongs to code-mode `exec/wait`, which resumes a yielded exec
-cell by `cell_id`; it is not the spawned-agent result tool.
+### Required subagent lifecycle
 
-## Environment Detection
+Every Codex subagent that has returned a terminal result must be closed immediately:
 
-Skills that create worktrees or finish branches should detect their
-environment with read-only git commands before proceeding:
-
-```bash
-GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
-GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
-BRANCH=$(git branch --show-current)
+```text
+spawn_agent -> wait_agent -> read result -> close_agent
 ```
 
-- `GIT_DIR != GIT_COMMON` → already in a linked worktree (skip creation)
-- `BRANCH` empty → detached HEAD (cannot branch/push/PR from sandbox)
+This applies to implementers, reviewers, scouts, risk reviewers, and one-off investigation agents. Do not keep completed agents open for later. Their result is the artifact; the live agent thread is just a tab hoarding gremlin.
 
-See `using-git-worktrees` Step 0 and `finishing-a-development-branch`
-Step 1 for how each skill uses these signals.
+If a follow-up fix is needed, dispatch a new subagent with the original task, the review finding, and the relevant diff. Do not leave the old subagent open between phases.
+
+Subagents are best for bounded work with clean handoffs: codebase exploration, plan review, test investigation, triage, and single-task implementation. Be cautious with parallel write-heavy work. Multiple agents editing the same files can create conflicts and coordination overhead.
+
+## Subagent limits
+
+Global Codex subagent settings live under `[agents]` in `~/.codex/config.toml` or project config:
+
+```toml
+[agents]
+max_threads = 6
+max_depth = 1
+```
+
+- `max_threads` caps concurrently open agent threads.
+- `max_depth = 1` allows direct child agents but prevents recursive fan-out. Keep this default unless you have a strong reason to allow agents to spawn more agents.
+- Raising `max_depth` can increase token usage, latency, local resource use, and unpredictability.
+- If Codex refuses to spawn more agents, first check for completed agents that were not closed.
+
+## Custom agents
+
+Codex can use project-scoped custom agents from `.codex/agents/*.toml` or personal agents from `~/.codex/agents/*.toml`.
+
+Each custom agent file must define:
+
+```toml
+name = "plan_reviewer"
+description = "Reviews implementation plans for correctness, coverage, and testability."
+developer_instructions = """
+Review plans only. Do not implement code.
+Return concrete findings with file paths, evidence, severity, and recommended plan edits.
+"""
+```
+
+Useful Superpowers agent roles:
+
+| Role | Suggested sandbox | Use |
+|------|-------------------|-----|
+| `context_scout` | read-only | Build a concise codebase map before planning |
+| `plan_author` | read-only | Draft plans from an approved spec and context pack |
+| `plan_reviewer` | read-only | Review plans before execution |
+| `risk_reviewer` | read-only | Check migrations, security, data loss, concurrency, public APIs |
+
+## Branch Detection
+
+Skills that start or finish implementation should detect their branch state with read-only git commands before proceeding:
+
+```bash
+BRANCH=$(git branch --show-current)
+STATUS=$(git status --short)
+```
+
+- `BRANCH` is `main` or `master` -> ask whether to create a new feature branch or work directly on the current branch.
+- `BRANCH` is empty -> detached HEAD, ask how to proceed.
+- `STATUS` is non-empty -> report dirty files before switching branches or editing.
+
+See `using-git-branches` for setup and `finishing-a-development-branch` for completion.
 
 ## Codex App Finishing
 
-When the sandbox blocks branch/push operations (detached HEAD in an
-externally managed worktree), the agent commits all work and informs
-the user to use the App's native controls:
+When the sandbox blocks branch or push operations, the agent commits any safe local work it can complete and informs the user to use the App's native controls:
 
-- **"Create branch"** — names the branch, then commit/push/PR via App UI
-- **"Hand off to local"** — transfers work to the user's local checkout
+- **"Create branch"** - names the branch, then commit/push/PR via App UI
+- **"Hand off to local"** - transfers work to the user's local checkout
 
-The agent can still run tests, stage files, and output suggested branch
-names, commit messages, and PR descriptions for the user to copy.
+The agent can still run tests, stage files, and output suggested branch names, commit messages, and PR descriptions for the user to copy.
