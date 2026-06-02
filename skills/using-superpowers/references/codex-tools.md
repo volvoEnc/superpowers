@@ -24,6 +24,18 @@ multi_agent = true
 
 Use `spawn_agent`, `wait_agent`, and `close_agent` when a Superpowers skill calls for subagent dispatch.
 
+### Required subagent lifecycle
+
+Every Codex subagent that has returned a terminal result must be closed immediately:
+
+```text
+spawn_agent -> wait_agent -> read result -> close_agent
+```
+
+This applies to implementers, reviewers, scouts, risk reviewers, and one-off investigation agents. Do not keep completed agents open for later. Their result is the artifact; the live agent thread is just a tab hoarding gremlin.
+
+If a follow-up fix is needed, dispatch a new subagent with the original task, the review finding, and the relevant diff. Do not leave the old subagent open between phases.
+
 Subagents are best for bounded work with clean handoffs: codebase exploration, plan review, test investigation, triage, and single-task implementation. Be cautious with parallel write-heavy work. Multiple agents editing the same files can create conflicts and coordination overhead.
 
 ## Subagent limits
@@ -39,6 +51,7 @@ max_depth = 1
 - `max_threads` caps concurrently open agent threads.
 - `max_depth = 1` allows direct child agents but prevents recursive fan-out. Keep this default unless you have a strong reason to allow agents to spawn more agents.
 - Raising `max_depth` can increase token usage, latency, local resource use, and unpredictability.
+- If Codex refuses to spawn more agents, first check for completed agents that were not closed.
 
 ## Custom agents
 
@@ -64,31 +77,26 @@ Useful Superpowers agent roles:
 | `plan_reviewer` | read-only | Review plans before execution |
 | `risk_reviewer` | read-only | Check migrations, security, data loss, concurrency, public APIs |
 
-## Environment Detection
+## Branch Detection
 
-Skills that create worktrees or finish branches should detect their
-environment with read-only git commands before proceeding:
+Skills that start or finish implementation should detect their branch state with read-only git commands before proceeding:
 
 ```bash
-GIT_DIR=$(cd "$(git rev-parse --git-dir)" 2>/dev/null && pwd -P)
-GIT_COMMON=$(cd "$(git rev-parse --git-common-dir)" 2>/dev/null && pwd -P)
 BRANCH=$(git branch --show-current)
+STATUS=$(git status --short)
 ```
 
-- `GIT_DIR != GIT_COMMON` -> already in a linked worktree (skip creation)
-- `BRANCH` empty -> detached HEAD (cannot branch/push/PR from sandbox)
+- `BRANCH` is `main` or `master` -> ask whether to create a new feature branch or work directly on the current branch.
+- `BRANCH` is empty -> detached HEAD, ask how to proceed.
+- `STATUS` is non-empty -> report dirty files before switching branches or editing.
 
-See `using-git-worktrees` Step 0 and `finishing-a-development-branch`
-Step 1 for how each skill uses these signals.
+See `using-git-branches` for setup and `finishing-a-development-branch` for completion.
 
 ## Codex App Finishing
 
-When the sandbox blocks branch/push operations (detached HEAD in an
-externally managed worktree), the agent commits all work and informs
-the user to use the App's native controls:
+When the sandbox blocks branch or push operations, the agent commits any safe local work it can complete and informs the user to use the App's native controls:
 
 - **"Create branch"** - names the branch, then commit/push/PR via App UI
 - **"Hand off to local"** - transfers work to the user's local checkout
 
-The agent can still run tests, stage files, and output suggested branch
-names, commit messages, and PR descriptions for the user to copy.
+The agent can still run tests, stage files, and output suggested branch names, commit messages, and PR descriptions for the user to copy.
