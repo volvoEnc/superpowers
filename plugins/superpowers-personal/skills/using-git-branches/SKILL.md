@@ -1,6 +1,6 @@
 ---
 name: using-git-branches
-description: Use when starting feature work, before executing implementation plans, or whenever the current Git branch may be main or master
+description: Use when starting feature work, before executing implementation plans, whenever the current Git branch may be main or master, or before brainstorming writes artifacts
 ---
 
 # Using Git Branches
