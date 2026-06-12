@@ -9,10 +9,10 @@ Execute a reviewed implementation plan with fresh helper agents. The controller 
 
 ## Start In The Current Checkout
 
-Before implementation, use `superpowers:using-git-branches`.
+Before implementation, use `superpowers:using-git-branches` in `implementation-start` mode.
 
 - Work in the current checkout by default.
-- If the current branch is `main` or `master`, ask whether to create a feature branch or work directly there.
+- If the current branch is `main` or `master`, the branch skill creates a task branch before implementation starts.
 - Do not create a git worktree unless the human partner explicitly asks for one.
 
 ## Required Helper Lifecycle
@@ -61,7 +61,7 @@ After all tasks, dispatch a final reviewer, capture its result, close it, then u
 
 Never:
 
-- Start implementation on `main` or `master` without explicit consent
+- Start implementation on `main` or `master`; run `superpowers:using-git-branches` first so it can create a task branch
 - Create a worktree unless explicitly requested
 - Skip spec review or quality review
 - Move to the next task while review issues remain open
