@@ -63,7 +63,7 @@ Built-in tools **replace the mechanical-quality role only** — they do not repl
 After the quality reviewer passes, on the live diff for that task:
 
 1. Run `/code-review` at **low** effort for mechanical issues.
-2. Run `/simplify` for refactor cleanup (quality only — it does not hunt for bugs; `/code-review` does that).
+2. Run `/simplify` for refactor cleanup (quality only — it does not hunt for bugs; `/code-review` does that). Skip if the implementer already ran `/simplify` in the TDD REFACTOR phase for this task.
 3. If the task touches **Tier-1** areas, run `/security-review`. Tiers are defined once in `superpowers:verification-before-completion` ("Security-Review Risk Tiers") — do not redefine them here.
 4. Resolve findings (or consciously defer).
 5. **If any step applied edits** (`/simplify` or `/code-review --fix` changed files), re-run the task's tests and re-check the post-edit diff against spec and quality review before marking complete. An auto-applied fix that has not been re-tested and re-reviewed does not count as reviewed.

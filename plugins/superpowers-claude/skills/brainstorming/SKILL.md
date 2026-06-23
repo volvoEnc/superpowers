@@ -25,7 +25,7 @@ The main agent is the orchestrator, facilitator, and state keeper. It asks the h
 3. **Dispatch `repo-context-scout`.** Give it only the request brief plus targeted repo paths or instructions to inspect files, docs, and recent commits. It returns a compact context brief.
 4. **Keep only the context brief.** The scout returns its result and terminates on its own. The context brief is the artifact. Do not carry raw file dumps, search logs, or exploration notes forward.
 5. **Dispatch `question-strategist`.** Give it only the request brief, context brief, and current decision pack. It returns blocking unknowns and the next best question plan.
-5a. **(Optional) Dispatch `multi-angle-analyzer`.** Trigger when a Tier-1 area is touched (Security-Review Risk Tiers in `superpowers:verification-before-completion`), OR more than one subsystem / many blocking unknowns are involved, OR the human partner asks for a deep analysis. Skip for small isolated changes. It examines the request through 6-8 lenses — security, performance, data-integrity, UX, maintainability, failure-modes, cost/scale, ops-complexity — and returns at most one blocking concern per lens plus cross-cutting questions. Feed its concerns into the question plan and the Risk Dimensions table in the decision pack. Keep only its compact result.
+5a. **(Conditional — mandatory for Tier-1) Dispatch `multi-angle-analyzer`.** Trigger when a Tier-1 area is touched (Security-Review Risk Tiers in `superpowers:verification-before-completion`), OR more than one subsystem / many blocking unknowns are involved, OR the human partner asks for a deep analysis. **A Tier-1 area always triggers it — the "small/isolated" escape never applies to Tier-1 work.** Skip only for small, isolated, non-Tier-1 changes. It examines the request through 6-8 lenses — security, performance, data-integrity, UX, maintainability, failure-modes, cost/scale, ops-complexity — and returns at most one blocking concern per lens plus cross-cutting questions. Feed its concerns into the question plan and the Risk Dimensions table in the decision pack. Keep only its compact result.
 6. **Ask the next question(s).** Default to one at a time for dependent unknowns; batch 2-4 **independent** questions in one `AskUserQuestion` call when their answers do not reframe each other (see Question Loop Rules for the independence test). The main agent records answers and updates the decision pack.
 7. **Repeat with fresh question strategy when needed.** For non-trivial work, dispatch a fresh `question-strategist` after each material answer or small answer batch. Keep only its compact result.
 8. **Return decisions to the orchestrator.** Once blocking questions are resolved, the main agent owns the approved decisions in the decision pack. Only the compact subagent results are kept; raw working context is not carried forward.
@@ -116,7 +116,7 @@ Tag each taxonomy dimension `DECIDED` | `TBD` | `NOT-APPLICABLE`:
 
 ## Risk Dimensions
 
-Filled only when the Multi-Angle Analyzer runs (see Orchestrated Flow); otherwise omit or mark `NOT-APPLICABLE`.
+Mandatory whenever a Tier-1 area is touched (the Multi-Angle Analyzer is required then, so this table must be filled). May be omitted or marked `NOT-APPLICABLE` only for non-Tier-1 changes where the analyzer was skipped.
 
 | Lens | Top Concern | Severity | Cross-Question Raised |
 |---|---|---|---|

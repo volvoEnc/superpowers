@@ -5,7 +5,7 @@
 **Files:**
 - Modify: plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
 
-Контекст (не перечитывать спек). Этот скил становится ЕДИНСТВЕННЫМ источником определения риск-тиров для `/security-review` — на него ссылаются `executing-plans` (task 015) и `finishing-a-development-branch` (task 003). Нельзя дублировать тиры в других скилах. Встроенные механизмы Claude Code (`/security-review`, `verify`, `run`) упоминаются БЕЗ префикса `superpowers:`. Текущий файл содержит якоря: `## The Iron Law` (строки 16-22), `## Common Failures` (таблица, строки 40-50), `## Red Flags - STOP` (строки 52-61). Три правки кодируют spec-пункты 10 (риск-тиры), 11 (поведенческая верификация) и шаблон сбора доказательств.
+Контекст (не перечитывать спек). Этот скил становится ЕДИНСТВЕННЫМ источником определения риск-тиров для `/security-review` — на него ссылаются `executing-plans` (task 007) и `finishing-a-development-branch` (task 004). Нельзя дублировать тиры в других скилах. Встроенные механизмы Claude Code (`/security-review`, `verify`, `run`) упоминаются БЕЗ префикса `superpowers:`. Текущий файл содержит якоря: `## The Iron Law`, `## Common Failures` (таблица), `## Red Flags - STOP`. Три правки кодируют spec-пункты 10 (риск-тиры), 11 (поведенческая верификация) и шаблон сбора доказательств.
 
 - [ ] Step 1: Определить acceptance-проверку. После правок ВСЕ команды ниже дают указанный результат:
   - (a) Секция риск-тиров: `grep -n "## Security-Review Risk Tiers" plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → ровно 1 совпадение.
