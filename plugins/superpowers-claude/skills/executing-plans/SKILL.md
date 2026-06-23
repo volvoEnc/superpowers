@@ -29,6 +29,15 @@ For each task:
 3. Run verifications as specified.
 4. Mark as completed.
 
+## Step 2a: Security Risk Check Before Handoff
+
+Before handing off to finishing, assess the security risk of the accumulated branch diff.
+
+1. Re-read the plan's per-task risk assessment. Determine whether any completed task touched a **Tier-1** area. Tier-1 is defined once in `superpowers:verification-before-completion` → section "Security-Review Risk Tiers" (auth/authz, crypto, secrets, external API keys, shell execution, file permissions, SQL/DB mutations, data export). Do not redefine the list here — consult that section.
+2. **If any task was Tier-1:** stop before handoff and ask your human partner for approval to run `/security-review` on the accumulated branch diff. `/security-review` is a Claude Code built-in (no `superpowers:` prefix). Run it only after explicit approval. Critical findings → fix before proceeding.
+3. **If no task was Tier-1:** note "plan risk: not Tier-1, /security-review not required" and continue.
+4. **Pass the risk assessment forward.** When invoking finishing in Step 3, state the plan's risk tier explicitly (e.g. "plan risk: Tier-1, /security-review run and clean" or "plan risk: not Tier-1") so finishing knows whether to auto-trigger its own `/security-review` gate rather than re-deriving it.
+
 ## Step 3: Complete Development
 
 After all tasks complete and verification passes:
