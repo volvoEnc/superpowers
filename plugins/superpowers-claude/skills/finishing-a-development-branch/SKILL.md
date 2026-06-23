@@ -21,7 +21,21 @@ npm test / cargo test / pytest / go test ./...
 
 If tests fail, report failures and stop.
 
-## Step 2: Detect Branch State
+## Step 2: Code Review Gate
+
+Tests passing is necessary, not sufficient. Before presenting completion options, run automated review on the branch diff.
+
+Run `/code-review` at **medium** effort against the branch diff:
+
+- **Critical issues found** → STOP. Do not present options yet. Fix the issues (or, if a finding is wrong, apply manual judgment per the precedent rule), re-run tests, then re-run `/code-review` until critical findings are resolved.
+- **Minor issues only** → note them; surface in the Step 5 menu preamble so your human partner decides whether to address before merge.
+- **Clean** → proceed.
+
+If the branch touched **Tier-1** areas, additionally run `/security-review` before presenting options. Tier-1 is defined once in `verification-before-completion` (see its `## Security-Review Risk Tiers` section) — do not redefine it here. If no Tier-1 area was touched, skip `/security-review` (adaptive by risk).
+
+This gate is automated hygiene (bugs, dead code, style) plus risk-tiered security; it does not replace manual reviewer subagents for architecture/intent/domain judgment. See `../../docs/review-integration-doctrine.md` for the full division of labor and the effort ladder.
+
+## Step 3: Detect Branch State
 
 ```bash
 BRANCH=$(git branch --show-current)
@@ -33,7 +47,7 @@ If `BRANCH` is empty, ask how to proceed.
 
 If `STATUS` is non-empty, report dirty files before destructive options.
 
-## Step 3: Determine Base Branch
+## Step 4: Determine Base Branch
 
 ```bash
 git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
@@ -41,7 +55,9 @@ git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
 
 If unclear, ask which base branch to use.
 
-## Step 4: Present Options
+## Step 5: Present Options
+
+Open the menu with a one-line review verdict so the choice is informed, e.g. `Tests pass. Code review: 0 critical, 1 minor. Security review: not required (no Tier-1). Ready to merge?` (drop the security line when Tier-1 was not touched).
 
 If on a feature branch:
 
@@ -68,7 +84,7 @@ Implementation complete on <branch>. What would you like to do?
 Which option?
 ```
 
-## Step 5: Execute Choice
+## Step 6: Execute Choice
 
 ### Feature branch: merge locally
 
@@ -113,6 +129,8 @@ git branch -D <feature-branch>
 Never:
 
 - Proceed with failing tests
+- Present completion options with unresolved critical `/code-review` findings
+- Skip `/security-review` when the branch touched Tier-1 areas
 - Merge without verifying tests on the result
 - Delete work without typed confirmation
 - Force-push without explicit request
@@ -121,6 +139,7 @@ Never:
 Always:
 
 - Verify tests before offering options
+- Run `/code-review` (medium) on the branch diff before presenting options
 - Detect branch state before presenting the menu
 - Ask before destructive actions
 - Leave the current checkout in place

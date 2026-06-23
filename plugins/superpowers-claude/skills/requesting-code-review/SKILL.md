@@ -21,6 +21,24 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 - Before refactoring (baseline check)
 - After fixing complex bug
 
+## Built-in code review vs subagent reviewers
+
+Two complementary tools. Choose by what kind of judgment is needed.
+
+- **`/code-review` (built-in)** — automatic hygiene: correctness bugs, dead code, style, simplification. Fast, runs on the live diff, no clean-context dispatch needed. Default for mechanical quality.
+- **Manual subagent reviewers** (this skill) — judgment: architecture, intent, domain rules, cross-system effects. Gets precisely crafted context, preserves orchestrator context. Use when the question is "is this the *right* design?", not "is this code correct?".
+
+They are not redundant — run both when the work is non-trivial. When a built-in finding and a manual reviewer's judgment conflict, manual judgment wins; on a real contradiction, ask your human partner. Full decision tree, effort ladder, and precedence rule: `../../docs/review-integration-doctrine.md`.
+
+**Effort ladder for `/code-review`:**
+- `low` — routine, low-risk changes (per-task during implementation).
+- `medium` — riskier changes; default gate before finishing a branch.
+- `high`+ — pre-merge or high-stakes diffs; broader, may surface uncertain findings.
+
+**Flags:**
+- `/code-review --comment` — posts findings as inline PR annotations (review-in-place on a PR).
+- `/code-review --fix` — applies the findings to the working tree. Run this **only after** a manual reviewer has approved the design, so auto-edits don't conflict with judgment-level changes you still intend to make.
+
 ## How to Request
 
 **1. Get git SHAs:**

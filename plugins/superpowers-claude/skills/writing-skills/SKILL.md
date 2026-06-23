@@ -593,6 +593,18 @@ helper1, helper2, step3, pattern4
 
 Deploying untested skills = deploying untested code. It's a violation of quality standards.
 
+## Pre-Deployment Skill-Quality Gate
+
+Before deploying a skill, run a final quality gate ON the `SKILL.md` itself — separate from the behavioral pressure-tests above:
+
+1. **`/code-review` on the SKILL.md** — catches logical inconsistencies, internal contradictions, and vague/ambiguous instructions in the prose. This is automated hygiene, not a substitute for testing behavior.
+2. **`/security-review` — only if the skill touches auth, secrets, or permissions** (e.g. the skill tells agents how to handle credentials, shell execution, or file access). Skip otherwise.
+3. **At least one adversarial pressure-test AFTER your edits**, proving the loophole you intended to close is actually closed. For edits to an EXISTING skill: re-run the original pressure scenario as a baseline FIRST (confirm the old behavior), then run it again WITH the edit (confirm the new behavior). A passing test on the edited skill alone proves nothing without the baseline.
+
+**What to ignore:** if `/code-review` complains a skill is "too strict," "too repetitive," or "over-constrained," that may be intentional — discipline-enforcing skills deliberately close loopholes and repeat counters. Apply judgment; do not relax behavior-shaping content just because automated review flagged it.
+
+`/code-review` and `/security-review` are Claude Code built-ins, not skills. For the full automated-hygiene-vs-judgment model and the risk-tier definition that decides when `/security-review` applies, see the review integration doctrine: `../../docs/review-integration-doctrine.md`.
+
 ## Skill Creation Checklist (TDD Adapted)
 
 **IMPORTANT: Use TodoWrite to create todos for EACH checklist item below.**

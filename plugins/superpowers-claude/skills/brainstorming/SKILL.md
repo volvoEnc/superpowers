@@ -25,7 +25,8 @@ The main agent is the orchestrator, facilitator, and state keeper. It asks the h
 3. **Dispatch `repo-context-scout`.** Give it only the request brief plus targeted repo paths or instructions to inspect files, docs, and recent commits. It returns a compact context brief.
 4. **Keep only the context brief.** The scout returns its result and terminates on its own. The context brief is the artifact. Do not carry raw file dumps, search logs, or exploration notes forward.
 5. **Dispatch `question-strategist`.** Give it only the request brief, context brief, and current decision pack. It returns blocking unknowns and the next best question plan.
-6. **Ask one question at a time.** The main agent asks the human partner the next question, records the answer, and updates the decision pack.
+5a. **(Conditional — mandatory for Tier-1) Dispatch `multi-angle-analyzer`.** Trigger when a Tier-1 area is touched (Security-Review Risk Tiers in `superpowers:verification-before-completion`), OR more than one subsystem / many blocking unknowns are involved, OR the human partner asks for a deep analysis. **A Tier-1 area always triggers it — the "small/isolated" escape never applies to Tier-1 work.** Skip only for small, isolated, non-Tier-1 changes. It examines the request through 6-8 lenses — security, performance, data-integrity, UX, maintainability, failure-modes, cost/scale, ops-complexity — and returns at most one blocking concern per lens plus cross-cutting questions. Feed its concerns into the question plan and the Risk Dimensions table in the decision pack. Keep only its compact result.
+6. **Ask the next question(s).** Default to one at a time for dependent unknowns; batch 2-4 **independent** questions in one `AskUserQuestion` call when their answers do not reframe each other (see Question Loop Rules for the independence test). The main agent records answers and updates the decision pack.
 7. **Repeat with fresh question strategy when needed.** For non-trivial work, dispatch a fresh `question-strategist` after each material answer or small answer batch. Keep only its compact result.
 8. **Return decisions to the orchestrator.** Once blocking questions are resolved, the main agent owns the approved decisions in the decision pack. Only the compact subagent results are kept; raw working context is not carried forward.
 9. **Dispatch `approach-scout`.** Give it the decision pack and context brief. It proposes 2-3 approaches with trade-offs and a recommendation.
@@ -90,19 +91,35 @@ Keep this short and update it after each human answer:
 ```markdown
 # Decision Pack
 
-## Goal
+Tag each taxonomy dimension `DECIDED` | `TBD` | `NOT-APPLICABLE`:
 
-## Approved Scope
-
-## Out of Scope
-
-## Constraints
+| Dimension | Verdict | Decision / Note |
+|---|---|---|
+| Goal | TBD | |
+| Scope | TBD | |
+| Non-Goals | TBD | |
+| Constraints | TBD | |
+| Success Metrics | TBD | |
+| Error Handling | TBD | |
+| Data Model | TBD | |
+| Security | TBD | |
+| Performance | TBD | |
+| UX | TBD | |
+| Edge Cases | TBD | |
+| Rollout/Verification | TBD | |
 
 ## Chosen Approach
 
 ## Alternatives Rejected
 
 ## Open Questions
+
+## Risk Dimensions
+
+Mandatory whenever a Tier-1 area is touched (the Multi-Angle Analyzer is required then, so this table must be filled). May be omitted or marked `NOT-APPLICABLE` only for non-Tier-1 changes where the analyzer was skipped.
+
+| Lens | Top Concern | Severity | Cross-Question Raised |
+|---|---|---|---|
 ```
 
 Only approved decisions belong here. Do not copy the whole chat, rejected drafts, or exploration logs.
@@ -137,12 +154,26 @@ Do not include raw file dumps or long excerpts.
 You are helping the orchestrator decide what to ask next.
 Do not ask the human directly. Do not write a spec. Do not design the full solution.
 Use only the request brief, context brief, and current decision pack.
+Map each blocking unknown to a Question Taxonomy dimension (Goal, Scope, Non-Goals, Constraints, Success Metrics, Error Handling, Data Model, Security, Performance, UX, Edge Cases, Rollout/Verification).
 Return:
-- blocking unknowns
-- whether enough is known to discuss approaches
-- the single next best question
+- blocking unknowns, each tagged with its taxonomy dimension
+- dimensions covered so far, and dimensions still TBD
+- the next dimension to address and why it matters now
+- the next question(s): a single question for dependent unknowns, OR 2-4 independent questions the orchestrator can batch in one AskUserQuestion call
 - 2-4 multiple-choice options when useful
-- why this question matters
+- whether enough is known to discuss approaches
+```
+
+### Multi-Angle Analyzer subagent
+
+Optional, risk-triggered. Use only when the Orchestrated Flow trigger is met.
+
+```text
+You are stress-testing the request through multiple lenses, not designing or implementing.
+Use only the request brief, context brief, and current decision pack.
+Examine 6-8 lenses: security, performance, data-integrity, UX, maintainability, failure-modes, cost/scale, ops-complexity.
+Return at most ONE blocking concern per lens (skip lenses with no real concern), each with a severity and a concrete cross-question the orchestrator should ask.
+Do not write a spec. Do not propose the full solution. Keep the output as a compact Risk Dimensions table.
 ```
 
 ### Approach Scout
@@ -174,12 +205,35 @@ Return a short receipt: approved | issues-found | blocked, with concrete finding
 
 ## Question Loop Rules
 
-- Ask exactly one question per message.
+- Default to one question per message for dependent or sequential clarifications (where the answer to one changes the wording or meaning of the next).
+- You may batch 2-4 **independent** questions in a single `AskUserQuestion` call. Questions are independent when the answer to one does not change the wording or meaning of another.
+  - Good (independent, batchable): "What is the primary goal?" + "What is the success metric?" + "What is the hard constraint?" — none reframes the others.
+  - Bad (dependent, ask one at a time): "Should we use a queue?" then "Which queue technology?" — the second only makes sense, and is worded differently, depending on the first answer.
+- `AskUserQuestion` is a Claude Code built-in; reference it without a `superpowers:` prefix.
 - Prefer multiple-choice questions when useful.
 - Continue until the decision pack can answer goal, scope, constraints, non-goals, success criteria, error handling expectations, and verification expectations.
 - For large or independent subsystems, stop and help split the work into separate specs before planning details.
 - Do not ask performative questions whose answers will not affect the design.
 - If a human answer resolves several unknowns, record all resolved decisions before asking the next question.
+
+## Question Taxonomy
+
+Drive elicitation breadth across these 12 dimensions. The Question Strategist maps blocking unknowns onto them; the Decision Pack records the verdict per dimension.
+
+1. **Goal** — what outcome the change must produce.
+2. **Scope** — what is included in this change.
+3. **Non-Goals** — what is explicitly excluded.
+4. **Constraints** — technical, time, or policy limits.
+5. **Success Metrics** — how "done/working" is measured.
+6. **Error Handling** — failure modes and expected behavior.
+7. **Data Model** — entities, shapes, migrations, persistence.
+8. **Security** — auth/authz, secrets, exposure, trust boundaries.
+9. **Performance** — latency, throughput, resource limits.
+10. **UX** — user-visible behavior and interaction.
+11. **Edge Cases** — boundary inputs and rare states.
+12. **Rollout/Verification** — how the change ships and is verified.
+
+**Adaptivity:** simple changes fill only the relevant dimensions and mark the rest `NOT-APPLICABLE`. Do not manufacture questions to fill every dimension — coverage means each dimension is consciously decided or dismissed, not exhaustively interrogated.
 
 ## Defaults
 

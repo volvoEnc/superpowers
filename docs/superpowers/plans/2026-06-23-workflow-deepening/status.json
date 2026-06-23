@@ -1,0 +1,21 @@
+{
+  "plan_id": "2026-06-23-workflow-deepening",
+  "spec": "docs/superpowers/specs/2026-06-23-workflow-deepening-design.md",
+  "status": "executed",
+  "current_task": null,
+  "completed_tasks": [
+    "task-001-review-doctrine.md",
+    "task-002-verification-before-completion.md",
+    "task-003-brainstorming.md",
+    "task-004-finishing-branch.md",
+    "task-005-requesting-code-review.md",
+    "task-006-subagent-driven-development.md",
+    "task-007-executing-plans.md",
+    "task-008-test-driven-development.md",
+    "task-009-dispatching-parallel-agents.md",
+    "task-010-writing-skills.md"
+  ],
+  "blocked_tasks": [],
+  "review_mode": "risk-tiered",
+  "note": "Plan fully executed. Each task's 'Step 2' RED-baseline checks are historical — they assert the pre-edit state and no longer fail now that the edits are applied. Treat this directory as a record, not a to-do."
+}
