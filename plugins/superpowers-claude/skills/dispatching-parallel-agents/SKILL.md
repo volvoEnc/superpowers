@@ -44,6 +44,37 @@ digraph when_to_use {
 - Need to understand full system state
 - Agents would interfere with each other
 
+## Manual Task dispatch vs Workflow tool
+
+Everything above describes **manual Task dispatch**: you hand-craft each agent's
+prompt and integrate results yourself. This is the default and **it is NOT wrong** —
+it is the right tool for most parallel work. Claude Code also ships a built-in
+**Workflow tool** (`parallel()` / `pipeline()`) that orchestrates agents for you.
+This section is an educational primer on *when* Workflow helps versus *when* it
+over-engineers a job that manual dispatch already does well. It mandates nothing.
+
+| Dimension | Manual Task dispatch (default) | Workflow tool (`parallel()` / `pipeline()`) |
+|-----------|--------------------------------|---------------------------------------------|
+| Problem shape | Heterogeneous problems — each agent does something different | Homogeneous domain — same operation fanned across many inputs |
+| Result shape | Uncertain / free-form summaries you read and reconcile | High-confidence, predictable result schema you can consume programmatically |
+| Human input mid-flow | Flow may need a human interruption or course-correction partway | No mid-flow human input — fire, collect, done |
+| Integration | You judge and merge results case by case | Mechanical aggregation of uniform outputs |
+
+**Rule of thumb:** if you would write three *different* agent prompts and then
+*think* about how to combine the answers, stay manual. If you would write the *same*
+prompt N times over uniform inputs and expect uniform structured results with no
+human checkpoint, Workflow may remove boilerplate. When unsure, manual dispatch is
+the safe default — do not reach for Workflow just because it exists.
+
+**Opt-in Workflow patterns (future options, not requirements):**
+- **Plan review as parallel + verify:** fan one plan out to several reviewer agents
+  with a shared rubric (`parallel()`), then a final verify step aggregates findings.
+- **Homogeneous batch fix:** apply the identical fix recipe across many independent
+  files where each result is "patched / not patched" with the same shape.
+
+Both are experiments to prototype on a single real workload before treating Workflow
+as anything more than an occasional opt-in.
+
 ## The Pattern
 
 ### 1. Identify Independent Domains

@@ -191,6 +191,12 @@ After green only:
 
 Keep tests green. Don't add behavior.
 
+**Optional (larger refactors):** after green, run `/simplify` to auto-detect
+duplication and simplify names, then re-run tests and confirm they stay green.
+`/simplify` is quality-only — it does NOT hunt for bugs. For correctness, run
+`/code-review` separately. Both are Claude Code built-ins; see
+[review-integration-doctrine](../../docs/review-integration-doctrine.md).
+
 ### Repeat
 
 Next failing test for next feature.
