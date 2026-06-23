@@ -3,7 +3,7 @@
 **Depends on:** 001 (doctrine doc), 002 (Security-Review Risk Tiers в verification-before-completion)
 **Review policy:** per-task-plus-risk
 **Files:**
-- Modify: `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md`
+- Modify: `plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md`
 
 ## Контекст (самодостаточно, не нужно перечитывать спек)
 
@@ -24,43 +24,43 @@
 - [ ] **Step 1: Определить acceptance-проверку.** После правки должны проходить все команды:
   1. Новая секция существует:
      ```bash
-     grep -n "## Step 2: Code Review Gate" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+     grep -n "## Step 2: Code Review Gate" plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
      ```
      Ожидаемо: ровно одна строка с заголовком `## Step 2: Code Review Gate`.
   2. Встроенные механизмы упомянуты без префикса:
      ```bash
-     grep -n "/code-review\|/security-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+     grep -n "/code-review\|/security-review" plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
      ```
      Ожидаемо: минимум 2 совпадения; ни одно не содержит `superpowers:/code-review`.
   3. Нет ошибочного префикса:
      ```bash
-     grep -n "superpowers:/code-review\|superpowers:/security-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+     grep -n "superpowers:/code-review\|superpowers:/security-review" plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
      ```
      Ожидаемо: пусто (exit code 1).
   4. Ссылки на доктрину и риск-тиры присутствуют:
      ```bash
-     grep -n "review-integration-doctrine.md\|Security-Review Risk Tiers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+     grep -n "review-integration-doctrine.md\|Security-Review Risk Tiers" plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
      ```
      Ожидаемо: минимум 2 совпадения (ссылка на доктрину + ссылка на секцию риск-тиров).
   5. Перенумерация: заголовки шагов идут 1..6 без дублей:
      ```bash
-     grep -n "^## Step " /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+     grep -n "^## Step " plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
      ```
      Ожидаемо: ровно 6 строк — Step 1: Verify Tests, Step 2: Code Review Gate, Step 3: Detect Branch State, Step 4: Determine Base Branch, Step 5: Present Options, Step 6: Execute Choice.
   6. Валидация плагина:
      ```bash
-     claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude
+     claude plugin validate plugins/superpowers-claude
      ```
      Ожидаемо: зелёный (valid).
 
 - [ ] **Step 2: Убедиться, что проверка СЕЙЧАС ПАДАЕТ (секция отсутствует).** Выполнить:
   ```bash
-  grep -n "## Step 2: Code Review Gate" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+  grep -n "## Step 2: Code Review Gate" plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
   ```
   Ожидаемо: пусто (exit code 1) — гейта ревью ещё нет.
   И:
   ```bash
-  grep -cn "^## Step " /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+  grep -cn "^## Step " plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
   ```
   Ожидаемо: `5` (текущие пять шагов).
 
@@ -120,15 +120,15 @@
 
 - [ ] **Step 4: Убедиться, что проверка теперь ПРОХОДИТ.** Выполнить все команды из Step 1 (1–6) и подтвердить ожидаемые результаты. Дополнительно проверить целостность кросс-ссылок и фронтматтера:
   ```bash
-  grep -rn "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+  grep -rn "superpowers:" plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
   ```
   Ожидаемо: либо пусто, либо только корректные ссылки на скилы (никаких `superpowers:/code-review` / `superpowers:/security-review`).
   ```bash
-  head -4 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+  head -4 plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
   ```
   Ожидаемо: первые строки — `---`, `name: finishing-a-development-branch`, `description: ...`, `---`.
   ```bash
-  claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude
+  claude plugin validate plugins/superpowers-claude
   ```
   Ожидаемо: зелёный.
 
@@ -139,6 +139,6 @@
 
 - [ ] **Step 5: Коммит.**
   ```bash
-  git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
+  git add plugins/superpowers-claude/skills/finishing-a-development-branch/SKILL.md
   git commit -m "feat(finishing): гейт /code-review и Tier-1 /security-review перед меню завершения"
   ```

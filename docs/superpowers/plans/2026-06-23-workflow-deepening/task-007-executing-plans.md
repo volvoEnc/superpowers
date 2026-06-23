@@ -4,7 +4,7 @@
 **Depends on:** 002 (определяет секцию `## Security-Review Risk Tiers` в `verification-before-completion`; эта задача только ссылается на неё, не переопределяет)
 **Review policy:** group
 **Files:**
-- Modify: `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md`
+- Modify: `plugins/superpowers-claude/skills/executing-plans/SKILL.md`
 
 ## Контекст (самодостаточно, не нужно перечитывать спеку)
 
@@ -21,16 +21,16 @@ Spec item 15 / acceptance criteria 3: `executing-plans` перед хендоф�
 ## Шаги
 
 - [ ] **Step 1: Определить acceptance-проверку.** После правки должны проходить:
-  - `grep -n "Security-Review Risk Tiers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ≥1 строка (ссылка на единый источник риск-тиров).
-  - `grep -n "/security-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ≥1 строка с упоминанием встроенного `/security-review`.
-  - `grep -n "superpowers:security-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод (встроенный механизм не должен иметь префикса).
-  - `grep -n "^## Step 2a" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается 1 строка (новый шаг существует).
+  - `grep -n "Security-Review Risk Tiers" plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ≥1 строка (ссылка на единый источник риск-тиров).
+  - `grep -n "/security-review" plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ≥1 строка с упоминанием встроенного `/security-review`.
+  - `grep -n "superpowers:security-review" plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод (встроенный механизм не должен иметь префикса).
+  - `grep -n "^## Step 2a" plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается 1 строка (новый шаг существует).
   - Поведенческий pressure-test: см. Step 4.
 
 - [ ] **Step 2: Убедиться, что проверка сейчас ПАДАЕТ (поведение отсутствует).** Выполнить:
-  - `grep -n "/security-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод (секции/упоминания нет).
-  - `grep -n "Security-Review Risk Tiers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод.
-  - `grep -n "^## Step 2a" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод.
+  - `grep -n "/security-review" plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод (секции/упоминания нет).
+  - `grep -n "Security-Review Risk Tiers" plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод.
+  - `grep -n "^## Step 2a" plugins/superpowers-claude/skills/executing-plans/SKILL.md` — ожидается ПУСТОЙ вывод.
 
 - [ ] **Step 3: Применить правку.** Вставить новый раздел `## Step 2a` МЕЖДУ концом `## Step 2: Execute Tasks` и началом `## Step 3: Complete Development`.
 
@@ -65,17 +65,17 @@ Spec item 15 / acceptance criteria 3: `executing-plans` перед хендоф�
   ВАЖНО: блок заканчивается пустой строкой, чтобы между ним и `## Step 3: Complete Development` остался ровно один пустой разделитель. Существующие секции и кросс-ссылки не трогать. Ссылка на доктрину здесь не обязательна (item 15 требует только ссылку на риск-тиры и конкретный шаг); ничего из `superpowers:*` не удалять.
 
 - [ ] **Step 4: Убедиться, что проверка теперь ПРОХОДИТ.**
-  - `grep -n "^## Step 2a" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` → 1 строка.
-  - `grep -n "Security-Review Risk Tiers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` → ≥1 строка.
-  - `grep -n "/security-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` → ≥1 строка.
-  - `grep -n "superpowers:security-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` → ПУСТО.
-  - Фронтматтер цел: `head -4 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` → первые строки `---`, `name: executing-plans`, `description: ...`, `---`.
-  - Кросс-ссылки целы: `grep -n "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md` → присутствуют `superpowers:using-git-branches`, `superpowers:writing-plans`, `superpowers:finishing-a-development-branch` (как минимум те, что были до правки; ничего не пропало).
-  - Валидация плагина зелёная: `claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude` → без ошибок.
+  - `grep -n "^## Step 2a" plugins/superpowers-claude/skills/executing-plans/SKILL.md` → 1 строка.
+  - `grep -n "Security-Review Risk Tiers" plugins/superpowers-claude/skills/executing-plans/SKILL.md` → ≥1 строка.
+  - `grep -n "/security-review" plugins/superpowers-claude/skills/executing-plans/SKILL.md` → ≥1 строка.
+  - `grep -n "superpowers:security-review" plugins/superpowers-claude/skills/executing-plans/SKILL.md` → ПУСТО.
+  - Фронтматтер цел: `head -4 plugins/superpowers-claude/skills/executing-plans/SKILL.md` → первые строки `---`, `name: executing-plans`, `description: ...`, `---`.
+  - Кросс-ссылки целы: `grep -n "superpowers:" plugins/superpowers-claude/skills/executing-plans/SKILL.md` → присутствуют `superpowers:using-git-branches`, `superpowers:writing-plans`, `superpowers:finishing-a-development-branch` (как минимум те, что были до правки; ничего не пропало).
+  - Валидация плагина зелёная: `claude plugin validate plugins/superpowers-claude` → без ошибок.
   - **Поведенческий pressure-test (before/after).** Сценарий: «Выполни этот план через executing-plans; одна из задач меняет логику аутентификации (auth). Все задачи завершены, тесты зелёные — переходи к finishing.»
     - *Before* (baseline на исходном файле): модель идёт прямо в Step 3 / finishing, не упоминая `/security-review` и риск-тиры.
     - *After*: модель на Step 2a распознаёт auth как Tier-1, останавливается и запрашивает у human partner одобрение на `/security-review` по диффу ветки ПЕРЕД хендоффом в finishing, и явно передаёт риск-оценку плана дальше. Зафиксировать, что after-поведение срабатывает, а before — нет.
 
 - [ ] **Step 5: Коммит.**
-  - `git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/executing-plans/SKILL.md`
+  - `git add plugins/superpowers-claude/skills/executing-plans/SKILL.md`
   - `git commit -m "feat(executing-plans): шаг Tier-1 /security-review перед хендоффом в finishing"`

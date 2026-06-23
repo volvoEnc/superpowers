@@ -33,7 +33,7 @@
 - Все правки только в `superpowers-claude/`. Codex-вариант не трогаем.
 
 ## Validation / Test Commands
-- `claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude`
+- `claude plugin validate plugins/superpowers-claude`
 - `grep -rn "superpowers:" plugins/superpowers-claude/skills/*/SKILL.md` — кросс-ссылки целы.
 - `head -5 <SKILL.md>` — фронтматтер валиден.
 - Поведенческий pressure-test: прогон сценария до/после на изменённых скилах (элиситация, гейты).

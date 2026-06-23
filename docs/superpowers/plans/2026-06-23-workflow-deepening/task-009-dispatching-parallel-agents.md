@@ -3,19 +3,19 @@
 **Depends on:** none
 **Review policy:** group
 **Files:**
-- Modify: /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md
+- Modify: plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md
 
 Цель: после секции `## When to Use` добавить образовательную (только-примаер, без поведенческого мандата) секцию-решающую-таблицу «Manual Task dispatch vs Workflow tool». Она объясняет, когда встроенный Workflow-инструмент (`parallel()`/`pipeline()`) помогает, а когда переусложняет, и явно фиксирует, что текущий ручной Task-диспатч НЕ является ошибкой и остаётся дефолтом. Опционально упоминает 1-2 opt-in паттерна Workflow как будущие опции. `/code-review`, `/security-review`, `/simplify`, `verify`, `run`, Workflow — это Claude Code built-ins, ссылаемся БЕЗ префикса `superpowers:`.
 
 - [ ] Step 1: Определить проверку приёмки. Команда:
-  `grep -n "Manual Task dispatch vs Workflow tool" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
+  `grep -n "Manual Task dispatch vs Workflow tool" plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
   Ожидаемый результат ПОСЛЕ правки: ровно одна строка с заголовком `## Manual Task dispatch vs Workflow tool`.
   Дополнительная проверка содержания:
-  `grep -n "is NOT wrong\|over-engineer" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
+  `grep -n "is NOT wrong\|over-engineer" plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
   Ожидается ПОСЛЕ правки: минимум одна строка (формулировка «текущий ручной подход НЕ неправильный» + про over-engineering).
 
 - [ ] Step 2: Убедиться, что проверка сейчас ПРОВАЛИВАЕТСЯ (секция отсутствует). Выполнить:
-  `grep -n "Manual Task dispatch vs Workflow tool" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md ; echo "exit=$?"`
+  `grep -n "Manual Task dispatch vs Workflow tool" plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md ; echo "exit=$?"`
   Ожидаемый результат СЕЙЧАС: нет совпадений, `exit=1` (grep ничего не нашёл — секции нет).
 
 - [ ] Step 3: Применить правку. Якорь — конец секции `## When to Use`, перед началом `## The Pattern`. В файле эта граница выглядит так (вставлять НОВЫЙ блок между этими двумя строками, после блока «Don't use when»):
@@ -67,16 +67,16 @@
   Ограничения при вставке: НЕ менять YAML-фронтматтер (строки 1–4, `name`/`description` первыми). Никаких префиксов `superpowers:` у `parallel()`/`pipeline()`/Workflow. Содержание держать компактным — не дублировать «The Pattern», только решающая таблица + правило + opt-in.
 
 - [ ] Step 4: Проверить, что проверка теперь ПРОХОДИТ. Выполнить:
-  - `grep -n "Manual Task dispatch vs Workflow tool" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → ровно одна строка с `## Manual Task dispatch vs Workflow tool`.
-  - `grep -n "is NOT wrong\|over-engineer" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → минимум одна строка.
+  - `grep -n "Manual Task dispatch vs Workflow tool" plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → ровно одна строка с `## Manual Task dispatch vs Workflow tool`.
+  - `grep -n "is NOT wrong\|over-engineer" plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → минимум одна строка.
   - Новая секция стоит между `## When to Use` и `## The Pattern` (порядок секций):
-    `grep -n "^## " /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
+    `grep -n "^## " plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
     Ожидается, что `## Manual Task dispatch vs Workflow tool` идёт сразу после `## When to Use` и перед `## The Pattern`.
-  - Фронтматтер цел: `head -5 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → первые строки `---`, `name: dispatching-parallel-agents`, `description: ...`, `---`.
+  - Фронтматтер цел: `head -5 plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → первые строки `---`, `name: dispatching-parallel-agents`, `description: ...`, `---`.
   - Кросс-ссылки `superpowers:` не появились ошибочно у built-ins:
-    `grep -n "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → не должно быть строк, привязывающих `superpowers:` к `parallel`/`pipeline`/`Workflow`/`verify`/`run` (для этого файла ожидается отсутствие совпадений вовсе).
-  - Валидация плагина зелёная: `claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude` → успех, без ошибок.
+    `grep -n "superpowers:" plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md` → не должно быть строк, привязывающих `superpowers:` к `parallel`/`pipeline`/`Workflow`/`verify`/`run` (для этого файла ожидается отсутствие совпадений вовсе).
+  - Валидация плагина зелёная: `claude plugin validate plugins/superpowers-claude` → успех, без ошибок.
 
 - [ ] Step 5: Коммит:
-  `git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
+  `git add plugins/superpowers-claude/skills/dispatching-parallel-agents/SKILL.md`
   `git commit -m "docs(skills): добавить решающую таблицу ручной Task-диспатч vs Workflow в dispatching-parallel-agents"`

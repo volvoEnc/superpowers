@@ -4,7 +4,7 @@
 **Depends on:** 001 (doctrine doc `review-integration-doctrine.md` должен существовать)
 **Review policy:** per-task-plus-risk (поведение-формирующий скил → нужен pressure-test после правки)
 **Files:**
-- Modify: `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/writing-skills/SKILL.md`
+- Modify: `plugins/superpowers-claude/skills/writing-skills/SKILL.md`
 
 ## Контекст (что и зачем)
 
@@ -20,18 +20,18 @@ Spec item 14 / acceptance criterion 7. В `writing-skills` после блока
 
 - [ ] **Step 1: Определить acceptance-check.** После правки секция должна находиться по заголовку. Команда:
   ```
-  grep -n "## Pre-Deployment Skill-Quality Gate" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/writing-skills/SKILL.md
+  grep -n "## Pre-Deployment Skill-Quality Gate" plugins/superpowers-claude/skills/writing-skills/SKILL.md
   ```
   Ожидаемый результат после правки: ровно одна строка с номером и заголовком `## Pre-Deployment Skill-Quality Gate`.
   Дополнительно проверить наличие ключевых упоминаний внутри секции:
   ```
-  grep -nE "/code-review|/security-review|adversarial|baseline" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/writing-skills/SKILL.md
+  grep -nE "/code-review|/security-review|adversarial|baseline" plugins/superpowers-claude/skills/writing-skills/SKILL.md
   ```
   Ожидается: совпадения на `/code-review`, `/security-review`, `adversarial`, `baseline` внутри новой секции (минимум 4 совпадения помимо прочего текста файла).
 
 - [ ] **Step 2: Убедиться, что check сейчас ПАДАЕТ (секция отсутствует).** Команда:
   ```
-  grep -n "## Pre-Deployment Skill-Quality Gate" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/writing-skills/SKILL.md
+  grep -n "## Pre-Deployment Skill-Quality Gate" plugins/superpowers-claude/skills/writing-skills/SKILL.md
   ```
   Ожидаемый результат ДО правки: пустой вывод, код возврата 1 (секции нет). Это подтверждает RED.
 
@@ -75,28 +75,28 @@ Spec item 14 / acceptance criterion 7. В `writing-skills` после блока
   - Acceptance-grep из Step 1 возвращает ровно одну строку с `## Pre-Deployment Skill-Quality Gate`; второй grep находит `/code-review`, `/security-review`, `adversarial`, `baseline`.
   - Фронтматтер цел (name/description первыми):
     ```
-    head -4 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/writing-skills/SKILL.md
+    head -4 plugins/superpowers-claude/skills/writing-skills/SKILL.md
     ```
     Ожидается: строки `---`, `name: writing-skills`, `description: Use when creating new skills...`, `---`.
   - Валидация плагина зелёная:
     ```
-    claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude
+    claude plugin validate plugins/superpowers-claude
     ```
     Ожидается: успешный вывод без ошибок.
   - Кросс-ссылки `superpowers:*` целы (правка ни одну не трогает):
     ```
-    grep -n "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/writing-skills/SKILL.md
+    grep -n "superpowers:" plugins/superpowers-claude/skills/writing-skills/SKILL.md
     ```
     Ожидается: прежние совпадения (`superpowers:test-driven-development`, `superpowers:systematic-debugging`) на месте, новых `superpowers:`-префиксов у `/code-review` / `/security-review` НЕТ.
   - Ссылка на доктрину резолвится (файл существует, создан задачей 001):
     ```
-    test -f /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK
+    test -f plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK
     ```
     Ожидается: `OK`.
   - Pressure-test (поведенческий, для behavior-shaping правки): в свежей сессии дать субагенту сценарий «отредактируй существующий скил X, добавив правило, и сразу задеплой». ДО правки baseline: агент деплоит без финального `/code-review` по SKILL.md и без повторного baseline-сценария. ПОСЛЕ правки: агент, прочитав `writing-skills`, прогоняет `/code-review` по SKILL.md, повторяет исходный pressure-сценарий как baseline и только потом деплоит. Зафиксировать before/after как доказательство срабатывания гейта.
 
 - [ ] **Step 5: Commit.**
   ```
-  git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/writing-skills/SKILL.md
+  git add plugins/superpowers-claude/skills/writing-skills/SKILL.md
   git commit -m "feat(writing-skills): добавить пред-деплой eval-гейт качества скила"
   ```

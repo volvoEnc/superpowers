@@ -3,7 +3,7 @@
 **Depends on:** 001
 **Review policy:** group
 **Files:**
-- Modify: `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
+- Modify: `plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
 
 Контекст (самодостаточно, чтобы не перечитывать спек):
 Добавить в скил `requesting-code-review` одну новую секцию, разделяющую встроенный `/code-review` и ручных субагентов-ревьюеров, со ссылкой на доктрину ревью (создана в task 001 по пути `plugins/superpowers-claude/docs/review-integration-doctrine.md`). Секция должна: (1) сказать, что `/code-review` берёт на себя корректность/мёртвый-код/стиль на effort low-medium, а ручные субагенты — архитектуру/домен/кросс-системное суждение; (2) описать лестницу effort (low — рутина → medium — рискованно → high+ — пред-мердж); (3) упомянуть `/code-review --comment` (инлайн-аннотации в PR) и `--fix` (только ПОСЛЕ одобрения ручным ревью, чтобы избежать конфликтующих правок); (4) сослаться на доктрину относительным путём.
@@ -21,17 +21,17 @@
 Шаги:
 
 - [ ] Step 1: Определить приёмочную проверку. После правки команда
-  `grep -n "Built-in code review vs subagent reviewers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
+  `grep -n "Built-in code review vs subagent reviewers" plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
   должна вернуть ровно одну строку с заголовком секции. Дополнительно
-  `grep -n "review-integration-doctrine.md" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
+  `grep -n "review-integration-doctrine.md" plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
   должна найти относительную ссылку на доктрину, и
-  `grep -nE "\-\-comment|\-\-fix" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
+  `grep -nE "\-\-comment|\-\-fix" plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
   должна найти упоминания обоих флагов.
 
 - [ ] Step 2: Убедиться, что проверка сейчас ПРОВАЛИВАЕТСЯ (секция отсутствует). Выполнить
-  `grep -c "Built-in code review vs subagent reviewers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
+  `grep -c "Built-in code review vs subagent reviewers" plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
   Ожидаемый вывод: `0`. И
-  `grep -c "review-integration-doctrine.md" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
+  `grep -c "review-integration-doctrine.md" plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
   Ожидаемый вывод: `0`.
 
 - [ ] Step 3: Применить правку. Вставить новую секцию СРАЗУ ПОСЛЕ конца секции `## When to Request Review` и ПЕРЕД `## How to Request`. Точный якорь — последний пункт секции `When to Request Review`:
@@ -64,13 +64,13 @@
   ```
 
 - [ ] Step 4: Проверить, что приёмка ПРОХОДИТ. Выполнить три grep из Step 1 — заголовок найден один раз, ссылка `review-integration-doctrine.md` присутствует, `--comment` и `--fix` присутствуют. Затем подтвердить целостность:
-  - Фронтматтер цел: `head -5 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md` — первые непустые строки `---`, `name: requesting-code-review`, `description: ...`.
-  - Существующая ссылка цела: `grep -n "requesting-code-review/code-reviewer.md" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md` — одна строка.
-  - НЕТ ошибочного префикса: `grep -n "superpowers:.*code-review" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/requesting-code-review/SKILL.md` — пустой вывод.
-  - Валидация плагина зелёная: `claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude` — без ошибок.
+  - Фронтматтер цел: `head -5 plugins/superpowers-claude/skills/requesting-code-review/SKILL.md` — первые непустые строки `---`, `name: requesting-code-review`, `description: ...`.
+  - Существующая ссылка цела: `grep -n "requesting-code-review/code-reviewer.md" plugins/superpowers-claude/skills/requesting-code-review/SKILL.md` — одна строка.
+  - НЕТ ошибочного префикса: `grep -n "superpowers:.*code-review" plugins/superpowers-claude/skills/requesting-code-review/SKILL.md` — пустой вывод.
+  - Валидация плагина зелёная: `claude plugin validate plugins/superpowers-claude` — без ошибок.
   - Поведенческий pressure-test: задать вопрос «нужно ли запускать `/code-review --fix` сразу после автонаходок» — скил после правки должен указывать, что `--fix` применяется только после одобрения ручным ревью (раньше скил молчал об этом).
 
 - [ ] Step 5: Коммит. Выполнить
-  `git -C /Users/danilka/llm-plugins/superpowers add plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
+  `git add plugins/superpowers-claude/skills/requesting-code-review/SKILL.md`
   затем
-  `git -C /Users/danilka/llm-plugins/superpowers commit -m "feat(requesting-code-review): секция встроенный /code-review vs субагенты со ссылкой на доктрину"`
+  `git commit -m "feat(requesting-code-review): секция встроенный /code-review vs субагенты со ссылкой на доктрину"`

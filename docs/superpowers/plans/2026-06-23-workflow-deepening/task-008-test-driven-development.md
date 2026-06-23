@@ -4,7 +4,7 @@
 **Depends on:** 001
 **Review policy:** group
 **Files:**
-- Modify: /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+- Modify: plugins/superpowers-claude/skills/test-driven-development/SKILL.md
 
 ## Контекст
 
@@ -23,27 +23,27 @@ After green only:
 Keep tests green. Don't add behavior.
 ```
 
-Доктрина создана task 001 по пути `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md`. Из `skills/test-driven-development/SKILL.md` относительный путь — `../../docs/review-integration-doctrine.md`.
+Доктрина создана task 001 по пути `plugins/superpowers-claude/docs/review-integration-doctrine.md`. Из `skills/test-driven-development/SKILL.md` относительный путь — `../../docs/review-integration-doctrine.md`.
 
 ## Steps
 
 - [ ] Step 1: Определить acceptance-check. Новая заметка считается на месте, если в файле есть упоминание `/simplify` именно в подсекции REFACTOR с пометкой про качество-only. Команда:
   ```
-  grep -nE '/simplify|review-integration-doctrine' /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  grep -nE '/simplify|review-integration-doctrine' plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   ```
   Ожидаемый результат ПОСЛЕ правки: минимум две строки — одна с `/simplify`, одна со ссылкой `../../docs/review-integration-doctrine.md`. Дополнительно проверить, что упоминание `/simplify` идёт без префикса `superpowers:`:
   ```
-  grep -n 'superpowers:simplify\|superpowers:/simplify\|superpowers:code-review' /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  grep -n 'superpowers:simplify\|superpowers:/simplify\|superpowers:code-review' plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   ```
   Ожидаемый результат: пусто (exit code 1) — встроенные механизмы без префикса.
 
 - [ ] Step 2: Убедиться, что check сейчас ПРОВАЛИВАЕТСЯ (заметка отсутствует). Команда:
   ```
-  grep -nE '/simplify|review-integration-doctrine' /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  grep -nE '/simplify|review-integration-doctrine' plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   ```
   Ожидаемый результат: пусто, exit code 1 (в файле сейчас нет ни `/simplify`, ни ссылки на доктрину).
 
-- [ ] Step 3: Применить правку. В файле `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md` найти подсекцию REFACTOR (строки 185-192) и заменить точный блок:
+- [ ] Step 3: Применить правку. В файле `plugins/superpowers-claude/skills/test-driven-development/SKILL.md` найти подсекцию REFACTOR (строки 185-192) и заменить точный блок:
 
   СТАРЫЙ блок (заменить):
   ```
@@ -79,35 +79,35 @@ Keep tests green. Don't add behavior.
 
 - [ ] Step 4: Убедиться, что check теперь ПРОХОДИТ.
   ```
-  grep -nE '/simplify|review-integration-doctrine' /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  grep -nE '/simplify|review-integration-doctrine' plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   ```
   Ожидаемый результат: строки с `/simplify` и со ссылкой `../../docs/review-integration-doctrine.md`.
   Проверить отсутствие префикса (должно быть пусто):
   ```
-  grep -n 'superpowers:simplify\|superpowers:code-review' /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  grep -n 'superpowers:simplify\|superpowers:code-review' plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   ```
   Проверить целостность фронтматтера (первые 4 строки = `---` / `name:` / `description:` / `---`):
   ```
-  head -5 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  head -5 plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   ```
   Проверить, что внутренние кросс-ссылки `superpowers:*` целы (заметка не должна была их затронуть):
   ```
-  grep -rn "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  grep -rn "superpowers:" plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   ```
   Ожидаемый результат: без изменений относительно baseline (в этом файле кросс-ссылок `superpowers:*` нет — пусто; задача их не вводит).
   Проверить, что относительная ссылка резолвится в существующий файл доктрины:
   ```
-  test -f /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK
+  test -f plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK
   ```
   Ожидаемый результат: `OK` (файл создан task 001).
   Валидация плагина:
   ```
-  claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude
+  claude plugin validate plugins/superpowers-claude
   ```
   Ожидаемый результат: зелёный (валидно, без ошибок).
 
 - [ ] Step 5: Закоммитить.
   ```
-  git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/test-driven-development/SKILL.md
+  git add plugins/superpowers-claude/skills/test-driven-development/SKILL.md
   git commit -m "feat(tdd): опциональный /simplify в фазе REFACTOR со ссылкой на доктрину ревью"
   ```

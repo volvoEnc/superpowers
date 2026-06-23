@@ -3,7 +3,7 @@
 **Depends on:** none
 **Review policy:** group
 **Files:**
-- Create: /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md
+- Create: plugins/superpowers-claude/docs/review-integration-doctrine.md
 
 Контекст для исполнителя (не нужно перечитывать спек):
 Это первый таск раунда. Он создаёт ЕДИНЫЙ reference-документ, на который ссылаются последующие правки скилов (`requesting-code-review`, `finishing-a-development-branch`, `subagent-driven-development`, `executing-plans`). Документ описывает ментальную модель встроенных механизмов Claude Code и правила их сочетания с ручными субагентами-ревьюерами.
@@ -17,12 +17,12 @@
 Шаги:
 
 - [ ] **Step 1: Определить acceptance-check.** После правки должны проходить все три проверки:
-  1. `test -f /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK` → выводит `OK`.
-  2. `grep -c "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md` → выводит `0` (в документе НЕТ ни одного упоминания встроенных механизмов с префиксом `superpowers:`).
-  3. `grep -E "Decision Tree|Effort Ladder|Conflict Precedence|Built-?in" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md` → находит все четыре обязательных раздела (по одной строке-заголовку на каждый).
+  1. `test -f plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK` → выводит `OK`.
+  2. `grep -c "superpowers:" plugins/superpowers-claude/docs/review-integration-doctrine.md` → выводит `0` (в документе НЕТ ни одного упоминания встроенных механизмов с префиксом `superpowers:`).
+  3. `grep -E "Decision Tree|Effort Ladder|Conflict Precedence|Built-?in" plugins/superpowers-claude/docs/review-integration-doctrine.md` → находит все четыре обязательных раздела (по одной строке-заголовку на каждый).
 
 - [ ] **Step 2: Убедиться, что check сейчас FAILS.** Выполнить:
-  `test -f /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md && echo EXISTS || echo ABSENT`
+  `test -f plugins/superpowers-claude/docs/review-integration-doctrine.md && echo EXISTS || echo ABSENT`
   Ожидаемый вывод: `ABSENT` (файл и каталог `docs/` ещё не созданы — это подтверждено инспекцией: `ls plugins/superpowers-claude/` показывает только `.claude-plugin assets hooks skills`).
 
 - [ ] **Step 3: Применить правку.** Так как файл новый, создать его целиком (Write по абсолютному пути выше; каталог `docs/` создаётся автоматически). Вставить РОВНО следующее содержимое:
@@ -75,11 +75,11 @@
   ```
 
 - [ ] **Step 4: Убедиться, что check теперь PASSES.** Выполнить все три проверки из Step 1:
-  - `test -f /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK` → `OK`.
-  - `grep -c "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md` → `0`.
-  - `grep -E "Decision Tree|Effort Ladder|Conflict Precedence|Built-?in" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md` → находит строки `## Decision Tree`, `## Effort Ladder`, `## Conflict Precedence` и ноту про встроенные механизмы.
-  Затем валидация плагина: `claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude` → зелёный (новый файл в `docs/` не является скилом и не должен влиять на счёт скилов/валидность). Кросс-линки этого таска не трогают — он только создаёт файл; убедиться, что в созданном документе ссылка на риск-тиры указывает на секцию `Security-Review Risk Tiers` в `verification-before-completion` (по имени, как в тексте выше).
+  - `test -f plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK` → `OK`.
+  - `grep -c "superpowers:" plugins/superpowers-claude/docs/review-integration-doctrine.md` → `0`.
+  - `grep -E "Decision Tree|Effort Ladder|Conflict Precedence|Built-?in" plugins/superpowers-claude/docs/review-integration-doctrine.md` → находит строки `## Decision Tree`, `## Effort Ladder`, `## Conflict Precedence` и ноту про встроенные механизмы.
+  Затем валидация плагина: `claude plugin validate plugins/superpowers-claude` → зелёный (новый файл в `docs/` не является скилом и не должен влиять на счёт скилов/валидность). Кросс-линки этого таска не трогают — он только создаёт файл; убедиться, что в созданном документе ссылка на риск-тиры указывает на секцию `Security-Review Risk Tiers` в `verification-before-completion` (по имени, как в тексте выше).
 
 - [ ] **Step 5: Commit.**
-  `git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md`
+  `git add plugins/superpowers-claude/docs/review-integration-doctrine.md`
   `git commit -m "docs(superpowers-claude): добавить Review Integration Doctrine (единая модель ревью)"`

@@ -4,7 +4,7 @@
 **Depends on:** 002 (multi-angle analyzer триггерится по Tier-1 из verification-before-completion)
 **Review policy:** per-task-plus-risk
 **Files:**
-- Modify: `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/brainstorming/SKILL.md`
+- Modify: `plugins/superpowers-claude/skills/brainstorming/SKILL.md`
 
 Кодирует spec-пункты 1, 6, 7, 8. Пять связанных правок в одном файле:
 (a) новая секция **Question Taxonomy** (12 измерений) сразу после `## Question Loop Rules`;
@@ -20,7 +20,7 @@
 - [ ] **Step 1: Определить acceptance-проверку.** После всех правок должны пройти эти команды (точный ожидаемый вывод — непустой/совпадает):
 
   ```bash
-  F=/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/brainstorming/SKILL.md
+  F=plugins/superpowers-claude/skills/brainstorming/SKILL.md
   grep -c "## Question Taxonomy" "$F"            # ожидаем: 1
   grep -c "## Multi-Angle Analyzer" "$F"          # ожидаем: 1
   grep -c "Risk Dimensions" "$F"                  # ожидаем: >=1 (таблица в Decision Pack)
@@ -32,17 +32,17 @@
 
   Структурная проверка плагина:
   ```bash
-  claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude   # ожидаем: зелёный (valid)
+  claude plugin validate plugins/superpowers-claude   # ожидаем: зелёный (valid)
   ```
 
   Кросс-ссылки целы (число вхождений `superpowers:` не уменьшилось; до правок их 5 — `using-git-branches`, `phase-handoff`, `writing-plans` и т.д.):
   ```bash
-  grep -c "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/brainstorming/SKILL.md   # ожидаем: >=5
+  grep -c "superpowers:" plugins/superpowers-claude/skills/brainstorming/SKILL.md   # ожидаем: >=5
   ```
 
   Проверка отсутствия префикса у built-in:
   ```bash
-  grep -c "superpowers:AskUserQuestion" /Users/danilka/llm-plugins/superpowers/skills/brainstorming/SKILL.md 2>/dev/null; grep -c "superpowers:AskUserQuestion" "$F"   # ожидаем: 0
+  grep -c "superpowers:AskUserQuestion" skills/brainstorming/SKILL.md 2>/dev/null; grep -c "superpowers:AskUserQuestion" "$F"   # ожидаем: 0
   ```
 
   **Pressure-test (поведенческий, behavior-shaping skill).** Сценарий «нетривиальная задача, задеты несколько подсистем»: дать агенту запрос вида «добавь экспорт данных пользователя с фоновой джобой и письмом-уведомлением». Ожидаемое НОВОЕ поведение: (1) Question Strategist возвращает covered/next-dimension/why по таксономии; (2) orchestrator батчит 2-4 независимых вопроса (напр. Goal + Success Metrics + Constraints) одним `AskUserQuestion`; (3) запускается multi-angle-analyzer (триггер: >1 подсистема + Tier-1 экспорт данных), его находки попадают в таблицу Risk Dimensions. Baseline-сценарий ДО правок: тех же сигналов нет (один вопрос за раз, нет таксономии, нет multi-angle шага).
@@ -50,7 +50,7 @@
 - [ ] **Step 2: Убедиться, что проверка сейчас ПАДАЕТ (секции/поведение отсутствуют).** Выполнить:
 
   ```bash
-  F=/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/brainstorming/SKILL.md
+  F=plugins/superpowers-claude/skills/brainstorming/SKILL.md
   grep -c "## Question Taxonomy" "$F"     # ожидаем сейчас: 0
   grep -c "## Multi-Angle Analyzer" "$F"  # ожидаем сейчас: 0
   grep -c "Risk Dimensions" "$F"          # ожидаем сейчас: 0
@@ -211,14 +211,14 @@
 
 - [ ] **Step 4: Убедиться, что проверка теперь ПРОХОДИТ.** Прогнать все grep из Step 1 — получить ожидаемые значения (Question Taxonomy=1, Multi-Angle Analyzer=1, Risk Dimensions>=1, NOT-APPLICABLE>=2, DECIDED>=1, батчинг>=1, «dimensions covered»>=1, `superpowers:AskUserQuestion`=0). Затем:
   ```bash
-  claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude   # ожидаем: зелёный
-  head -4 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/brainstorming/SKILL.md   # ожидаем: YAML-фронтматтер цел (--- / name: brainstorming / description: ... / ---)
-  grep -c "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/brainstorming/SKILL.md   # ожидаем: >=5 (кросс-ссылки целы)
+  claude plugin validate plugins/superpowers-claude   # ожидаем: зелёный
+  head -4 plugins/superpowers-claude/skills/brainstorming/SKILL.md   # ожидаем: YAML-фронтматтер цел (--- / name: brainstorming / description: ... / ---)
+  grep -c "superpowers:" plugins/superpowers-claude/skills/brainstorming/SKILL.md   # ожидаем: >=5 (кросс-ссылки целы)
   ```
   Прогнать pressure-test из Step 1 (до/после): убедиться, что новое поведение (taxonomy-coverage + батчинг + multi-angle на нетривиальной задаче) срабатывает, а на простом изолированном изменении остаётся лёгким (multi-angle пропускается, лишние измерения → `NOT-APPLICABLE`). Зафиксировать before/after результат в receipt.
 
 - [ ] **Step 5: Commit.**
   ```bash
-  git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/brainstorming/SKILL.md
+  git add plugins/superpowers-claude/skills/brainstorming/SKILL.md
   git commit -m "feat(brainstorming): таксономия вопросов, батчинг и опциональный многоугловой анализ"
   ```

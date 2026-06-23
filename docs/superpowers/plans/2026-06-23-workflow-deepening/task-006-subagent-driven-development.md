@@ -3,7 +3,7 @@
 **Depends on:** 001, 002
 **Review policy:** per-task-plus-risk
 **Files:**
-- Modify: `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md`
+- Modify: `plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md`
 
 ## Контекст (самодостаточно — не требует перечитывания спека)
 
@@ -21,7 +21,7 @@ Spec item 12. В per-task цикле `subagent-driven-development` нужно я
 
 Жёсткие ограничения:
 - `/code-review`, `/simplify`, `/security-review` — это **встроенные** механизмы Claude Code. Ссылаться как `/code-review` и т.п., **БЕЗ** префикса `superpowers:`.
-- Доктрина: `/Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md` (создана task 001). Из этого SKILL.md относительный путь — `../../docs/review-integration-doctrine.md`. Ссылаться, не дублировать.
+- Доктрина: `plugins/superpowers-claude/docs/review-integration-doctrine.md` (создана task 001). Из этого SKILL.md относительный путь — `../../docs/review-integration-doctrine.md`. Ссылаться, не дублировать.
 - Риск-тиры определены ОДИН раз в `superpowers:verification-before-completion` (секция «Security-Review Risk Tiers», task 002). Ссылаться, не переопределять.
 - Не ломать существующие `superpowers:` кросс-ссылки: `superpowers:test-driven-development`, `superpowers:requesting-code-review`, `superpowers:finishing-a-development-branch`, `superpowers:using-git-branches`, `superpowers:writing-plans`.
 - Не раздувать: вшить тонко, длинные правила — ссылкой на доктрину.
@@ -30,13 +30,13 @@ Spec item 12. В per-task цикле `subagent-driven-development` нужно я
 
 - [ ] Step 1: Определить acceptance-проверку. После правки в файле должна появиться вставка built-in ревью в per-task цикл со ссылкой на доктрину и на риск-тиры. Точная команда:
   ```
-  grep -nE "/code-review|/simplify|/security-review|review-integration-doctrine\.md|Security-Review Risk Tiers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
+  grep -nE "/code-review|/simplify|/security-review|review-integration-doctrine\.md|Security-Review Risk Tiers" plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
   ```
   Ожидаемый результат: ненулевой вывод, минимум по одной строке на каждый паттерн: `/code-review` (low), `/simplify`, `/security-review` (Tier-1), относительный путь `../../docs/review-integration-doctrine.md`, и упоминание риск-тиров со ссылкой на `superpowers:verification-before-completion`.
 
 - [ ] Step 2: Убедиться, что проверка сейчас ПРОВАЛИВАЕТСЯ (секции/поведения нет). Команда:
   ```
-  grep -nE "/code-review|/simplify|/security-review|review-integration-doctrine" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
+  grep -nE "/code-review|/simplify|/security-review|review-integration-doctrine" plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
   ```
   Ожидаемый результат: пустой вывод (exit code 1) — в текущем файле этих упоминаний нет.
 
@@ -97,37 +97,37 @@ Spec item 12. В per-task цикле `subagent-driven-development` нужно я
 - [ ] Step 4: Проверить, что проверка теперь ПРОХОДИТ.
   4a. Команда из Step 1:
   ```
-  grep -nE "/code-review|/simplify|/security-review|review-integration-doctrine\.md|Security-Review Risk Tiers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
+  grep -nE "/code-review|/simplify|/security-review|review-integration-doctrine\.md|Security-Review Risk Tiers" plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
   ```
   Ожидаемо: строки с `/code-review` (low effort), `/simplify`, `/security-review` (Tier-1), `../../docs/review-integration-doctrine.md`, и «Security-Review Risk Tiers».
   4a-bis. Целевой файл доктрины существует (ссылка не висячая):
   ```
-  test -f /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK
+  test -f plugins/superpowers-claude/docs/review-integration-doctrine.md && echo OK
   ```
   Ожидаемо: `OK` (иначе сначала выполнить task 001).
   4b. Валидатор плагина зелёный:
   ```
-  claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude
+  claude plugin validate plugins/superpowers-claude
   ```
   Ожидаемо: статус valid / без ошибок.
   4c. Фронтматтер цел (name/description первыми):
   ```
-  head -5 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
+  head -5 plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
   ```
   Ожидаемо: первые строки — `---`, `name: subagent-driven-development`, `description: ...`, `---`.
   4d. Кросс-ссылки `superpowers:*` целы (ни одна не получила случайного префикса у built-in, ни одна старая не пропала):
   ```
-  grep -nE "superpowers:(test-driven-development|requesting-code-review|finishing-a-development-branch|using-git-branches|writing-plans|verification-before-completion)" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
+  grep -nE "superpowers:(test-driven-development|requesting-code-review|finishing-a-development-branch|using-git-branches|writing-plans|verification-before-completion)" plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
   ```
   Ожидаемо: все шесть ссылок присутствуют. И проверка, что built-in механизмы НЕ получили префикс:
   ```
-  grep -nE "superpowers:(code-review|simplify|security-review)" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
+  grep -nE "superpowers:(code-review|simplify|security-review)" plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
   ```
   Ожидаемо: пустой вывод (exit code 1).
   4e. Pressure-test (поведенческий, до/после). Сценарий: «Выполняю план из 5 задач; задача 3 трогает auth-токены». Baseline (до правки) — модель завершает задачу 3 только по ручным spec+quality ревью, без built-in `/security-review`. После правки — модель в per-task цикле задачи 3 распознаёт Tier-1, запускает `/code-review` low + `/simplify` и `/security-review`, а на тривиальной задаче 5 (правка README) помечает built-in ревью `NOT-APPLICABLE`. Зафиксировать, что новое поведение срабатывает (риск-тированность + опциональность по риску).
 
 - [ ] Step 5: Коммит.
   ```
-  git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
+  git add plugins/superpowers-claude/skills/subagent-driven-development/SKILL.md
   git commit -m "feat(subagent-driven-development): риск-тированное встроенное ревью в per-task цикле"
   ```

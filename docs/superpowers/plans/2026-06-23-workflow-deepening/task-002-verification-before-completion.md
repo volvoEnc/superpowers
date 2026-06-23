@@ -3,22 +3,22 @@
 **Depends on:** none
 **Review policy:** per-task-plus-risk
 **Files:**
-- Modify: /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
+- Modify: plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
 
 Контекст (не перечитывать спек). Этот скил становится ЕДИНСТВЕННЫМ источником определения риск-тиров для `/security-review` — на него ссылаются `executing-plans` (task 015) и `finishing-a-development-branch` (task 003). Нельзя дублировать тиры в других скилах. Встроенные механизмы Claude Code (`/security-review`, `verify`, `run`) упоминаются БЕЗ префикса `superpowers:`. Текущий файл содержит якоря: `## The Iron Law` (строки 16-22), `## Common Failures` (таблица, строки 40-50), `## Red Flags - STOP` (строки 52-61). Три правки кодируют spec-пункты 10 (риск-тиры), 11 (поведенческая верификация) и шаблон сбора доказательств.
 
 - [ ] Step 1: Определить acceptance-проверку. После правок ВСЕ команды ниже дают указанный результат:
-  - (a) Секция риск-тиров: `grep -n "## Security-Review Risk Tiers" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → ровно 1 совпадение.
-  - (b) Все три тира присутствуют: `grep -cE "Tier 1|Tier 2|Tier 3" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → не менее 3.
-  - (c) Правило смешанных изменений: `grep -n "highest applicable tier" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → не менее 1 совпадения.
-  - (d) Шаблон сбора доказательств: `grep -n "## Evidence Capture" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → ровно 1 совпадение, и `grep -n "Tests pass \[34/34, exit 0\]" SKILL.md` → не менее 1.
-  - (e) Поведенческая строка в таблице Common Failures: `grep -n "verify/run" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → не менее 1 совпадения.
+  - (a) Секция риск-тиров: `grep -n "## Security-Review Risk Tiers" plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → ровно 1 совпадение.
+  - (b) Все три тира присутствуют: `grep -cE "Tier 1|Tier 2|Tier 3" plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → не менее 3.
+  - (c) Правило смешанных изменений: `grep -n "highest applicable tier" plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → не менее 1 совпадения.
+  - (d) Шаблон сбора доказательств: `grep -n "## Evidence Capture" plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → ровно 1 совпадение, и `grep -n "Tests pass \[34/34, exit 0\]" SKILL.md` → не менее 1.
+  - (e) Поведенческая строка в таблице Common Failures: `grep -n "verify/run" plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → не менее 1 совпадения.
   - (f) Валидация плагина зелёная (см. Step 4).
   - (g) Pressure-test (см. Step 4): на сценарии «работа задела модуль аутентификации, тесты зелёные» скил должен указывать на обязательный `/security-review` (Tier 1).
 
 - [ ] Step 2: Убедиться, что проверка СЕЙЧАС ПРОВАЛИВАЕТСЯ (секции/поведение отсутствуют). Выполнить:
   ```
-  grep -nE "Security-Review Risk Tiers|Evidence Capture|verify/run|highest applicable tier" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
+  grep -nE "Security-Review Risk Tiers|Evidence Capture|verify/run|highest applicable tier" plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
   ```
   Ожидаемо: НИ ОДНОГО совпадения (exit code 1). Это подтверждает, что ни риск-тиров, ни шаблона доказательств, ни строки про verify/run в файле пока нет (baseline для pressure-test: текущий скил молчит про `/security-review` на auth-изменениях).
 
@@ -73,13 +73,13 @@
 
 - [ ] Step 4: Убедиться, что проверка ТЕПЕРЬ ПРОХОДИТ.
   - Прогнать все grep из Step 1 (a)-(e); каждый даёт указанное число совпадений.
-  - Фронтматтер цел: `head -5 /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → первые строки `---`, `name: verification-before-completion`, `description: ...`, `---`.
-  - Кросс-ссылки целы: `grep -rn "superpowers:" /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/*/SKILL.md` — внутренние `superpowers:*` ссылки не пострадали; в трёх вставленных блоках НЕТ префикса `superpowers:` перед `/security-review`, `verify`, `run` (проверить: `grep -n "superpowers:/security-review\|superpowers: verify\|superpowers: run" SKILL.md` → 0 совпадений).
-  - Валидация плагина: `claude plugin validate /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude` → зелёно (exit 0, без ошибок).
+  - Фронтматтер цел: `head -5 plugins/superpowers-claude/skills/verification-before-completion/SKILL.md` → первые строки `---`, `name: verification-before-completion`, `description: ...`, `---`.
+  - Кросс-ссылки целы: `grep -rn "superpowers:" plugins/superpowers-claude/skills/*/SKILL.md` — внутренние `superpowers:*` ссылки не пострадали; в трёх вставленных блоках НЕТ префикса `superpowers:` перед `/security-review`, `verify`, `run` (проверить: `grep -n "superpowers:/security-review\|superpowers: verify\|superpowers: run" SKILL.md` → 0 совпадений).
+  - Валидация плагина: `claude plugin validate plugins/superpowers-claude` → зелёно (exit 0, без ошибок).
   - Pressure-test (behavior-shaping): в чистой сессии подать сценарий «Я закончил правку модуля логина (auth), юнит-тесты зелёные, готов коммитить» и убедиться, что скил направляет на `/security-review` как Tier-1-обязательный и требует evidence-строку. Сравнить с baseline из Step 2 (раньше скил про `/security-review` молчал). Зафиксировать before/after результат как доказательство срабатывания.
 
 - [ ] Step 5: Коммит.
   ```
-  git add /Users/danilka/llm-plugins/superpowers/plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
+  git add plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
   git commit -m "feat(verification): добавить риск-тиры, шаблон доказательств и поведенческую верификацию"
   ```
