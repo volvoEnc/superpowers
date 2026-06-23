@@ -21,6 +21,20 @@ NO COMPLETION CLAIMS WITHOUT FRESH VERIFICATION EVIDENCE
 
 If you haven't run the verification command in this message, you cannot claim it passes.
 
+## Security-Review Risk Tiers
+
+Single source of truth for when `/security-review` is required. Other skills (`executing-plans`, `finishing-a-development-branch`, `subagent-driven-development`) reference THIS section — do not redefine tiers elsewhere.
+
+| Tier | `/security-review` | Areas |
+|------|--------------------|-------|
+| **Tier 1** | **Mandatory** | auth/authz, cryptography, secrets, external API keys, shell execution, file permissions, SQL/DB mutations + DDL + data export |
+| **Tier 2** | Optional (judgment) | large refactors, configuration changes |
+| **Tier 3** | Skip | docs, UI text, tests-only |
+
+**Mixed changes:** apply the highest applicable tier — if a change touches any Tier-1 area, the whole change is Tier 1. SQL/DB: mutations, DDL, and export are Tier 1; pure read-only queries are not Tier 1 by default (escalate only if context warrants).
+
+*(Default proposal — your human partner confirms the list against their threat model.)*
+
 ## The Gate Function
 
 ```
@@ -48,6 +62,7 @@ Skip any step = lying, not verifying
 | Regression test works | Red-green cycle verified | Test passes once |
 | Agent completed | VCS diff shows changes | Agent reports "success" |
 | Requirements met | Line-by-line checklist | Tests passing |
+| Behavioral change works | verify/run skill: app exercised, behavior observed | Unit tests green |
 
 ## Red Flags - STOP
 
@@ -59,6 +74,19 @@ Skip any step = lying, not verifying
 - Thinking "just this once"
 - Tired and wanting work over
 - **ANY wording implying success without having run verification**
+
+## Evidence Capture
+
+Before any completion claim, capture one tight evidence line with these fields:
+
+- **Test count + exit code** — e.g. `34/34, exit 0`
+- **Build status** — e.g. `clean` / `exit 0`
+- **Diff stats** — files/lines changed
+- **Review verdict** — `/code-review` outcome (critical count) when a review ran
+
+Example: `Tests pass [34/34, exit 0]. Build clean. Diff: 3 files +52/-7. Code review: 0 critical.`
+
+Each field is a claim — only include a field you actually ran the command for (see The Gate Function).
 
 ## Rationalization Prevention
 
