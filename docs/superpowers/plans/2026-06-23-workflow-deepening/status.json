@@ -1,0 +1,8 @@
+{
+  "plan_id": "2026-06-23-workflow-deepening",
+  "spec": "docs/superpowers/specs/2026-06-23-workflow-deepening-design.md",
+  "current_task": "task-001-review-doctrine.md",
+  "completed_tasks": [],
+  "blocked_tasks": [],
+  "review_mode": "risk-tiered"
+}
