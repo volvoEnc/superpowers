@@ -95,6 +95,8 @@ Use `superpowers:<skill-name>` to ...
 - Rejected approaches
 - Old draft plans
 - Tool logs unless needed for a blocker
+- Intermediate review receipts and decision packs (read the saved file on resume, not the chat)
+- Per-task result files (docs/superpowers/runs/<run>/task-NNN-result.md) unless investigating a blocker
 
 ## Open Questions
 
@@ -118,9 +120,15 @@ Save a small machine-readable state file:
   "completed_tasks": ["task-001-name.md", "task-002-name.md"],
   "blocked_tasks": [],
   "last_green_commit": "abc1234",
-  "next_action": "Execute task-003-name.md with superpowers:subagent-driven-development"
+  "next_action": "Execute task-003-name.md with superpowers:subagent-driven-development",
+  "plan_risk_tier": "Tier-1 | Tier-2 | Tier-3",
+  "test_results":           { "summary": "34/34", "exit_code": 0, "commit": "<sha>", "timestamp": "<iso>" },
+  "code_review_verdict":    { "verdict": "clean | issues-found | blocked", "effort": "medium", "commit": "<sha>", "timestamp": "<iso>" },
+  "security_review_status": { "required": true, "verdict": "clean | critical-open | n/a", "commit": "<sha>", "timestamp": "<iso>" }
 }
 ```
+
+Each evidence field records the `commit` and `timestamp` of the run that produced it. A cached verdict (`test_results`, `code_review_verdict`, `security_review_status`) is valid only when its `commit == current HEAD` SHA. Any new commit invalidates every cached verdict. Downstream skills such as `superpowers:finishing-a-development-branch` re-run the corresponding check whenever the SHA differs, the verdict is not clean, or the field is missing. This schema is defined here once; other skills reference these field names and must not redefine them.
 
 Keep this file boring. Boring state survives compaction.
 
@@ -140,8 +148,9 @@ When resuming from a handoff:
 1. Read `handoff.md`.
 2. Read only the artifacts listed under Source of Truth.
 3. Check current git state against the handoff.
-4. Continue from Next Action.
-5. If state drifted, update the handoff before continuing.
+4. If `current_task` is set in `state.json`, confirm the remaining work for that task before acting on Next Action.
+5. Continue from Next Action.
+6. If state drifted, update the handoff before continuing.
 
 ## Red Flags
 
