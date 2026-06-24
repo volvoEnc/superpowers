@@ -21,9 +21,22 @@ npm test / cargo test / pytest / go test ./...
 
 If tests fail, report failures and stop.
 
+### Inputs (optional)
+
+- **plan risk: `[Tier-1 | not]`** — if the caller (e.g. `executing-plans` Step 3) passes the plan's risk tier, use it as-is. Do **not** re-derive the tier. If not passed, fall back to detecting Tier-1 from the branch diff per `verification-before-completion` (`## Security-Review Risk Tiers`).
+
+Read durable evidence before running any review. If `docs/superpowers/runs/<run>/state.json` exists, load it — its schema (incl. `code_review_verdict`, `security_review_status`, `plan_risk_tier`) is defined once in `superpowers:phase-handoff`; do not redefine it here. The cached verdicts drive Step 2's skip/re-run decision.
+
 ## Step 2: Code Review Gate
 
 Tests passing is necessary, not sufficient. Before presenting completion options, run automated review on the branch diff.
+
+**Cache check (per SHA).** First compute the current HEAD SHA (`git rev-parse HEAD`). For each cached verdict in `state.json` (`code_review_verdict`, `security_review_status`):
+
+- `verdict.commit` == HEAD **and** the verdict is clean (`code_review_verdict.verdict == "clean"` / `security_review_status.verdict` is `clean` or `n/a`) → **skip** that review, log `cached: clean`.
+- SHA differs **or** the verdict is not clean **or** no record exists → **re-run** that review below.
+
+Any new commit invalidates the cache (verdicts are bound to a SHA). Skipping a clean cached review avoids redoing fresh-subagent work the orchestrator already paid for.
 
 Run `/code-review` at **medium** effort against the branch diff:
 
@@ -31,7 +44,7 @@ Run `/code-review` at **medium** effort against the branch diff:
 - **Minor issues only** → note them; surface in the Step 5 menu preamble so your human partner decides whether to address before merge.
 - **Clean** → proceed.
 
-If the branch touched **Tier-1** areas, additionally run `/security-review` before presenting options. Tier-1 is defined once in `verification-before-completion` (see its `## Security-Review Risk Tiers` section) — do not redefine it here. If no Tier-1 area was touched, skip `/security-review` (adaptive by risk).
+If the branch is **Tier-1** (use the passed `plan risk` from Step 1 if provided, else detect from the diff), additionally run `/security-review` before presenting options — unless its cached `security_review_status` is clean for the current HEAD (`cached: clean`). Tier-1 is defined once in `verification-before-completion` (see its `## Security-Review Risk Tiers` section) — do not redefine it here. If not Tier-1, skip `/security-review` (adaptive by risk).
 
 This gate is automated hygiene (bugs, dead code, style) plus risk-tiered security; it does not replace manual reviewer subagents for architecture/intent/domain judgment. See `../../docs/review-integration-doctrine.md` for the full division of labor and the effort ladder.
 
@@ -57,32 +70,29 @@ If unclear, ask which base branch to use.
 
 ## Step 5: Present Options
 
-Open the menu with a one-line review verdict so the choice is informed, e.g. `Tests pass. Code review: 0 critical, 1 minor. Security review: not required (no Tier-1). Ready to merge?` (drop the security line when Tier-1 was not touched).
+**Default: auto-push branch + open PR (no menu).** When ALL of these hold — on a feature branch (not `main`/`master`), clean working tree, an unambiguous base branch (from Step 4), and no `--no-auto` flag — do NOT ask. Auto-execute the "push and create PR" path in Step 6: push the branch and open a PR with `gh` (never auto-merge). Log a one-line verdict first, e.g. `Tests pass. Code review: cached clean. Security: not required (not Tier-1). Opening PR.`
 
-If on a feature branch:
+**Show the menu ONLY on an ambiguity trigger:**
+
+- On `main`/`master` → **error** and stop unless `--allow-main` was passed (refuse to push/PR from the trunk silently).
+- Dirty working tree (Step 3 `STATUS` non-empty).
+- Ambiguous base branch (Step 4 could not resolve a single base).
+- Explicit `--no-auto` flag.
+
+When a trigger fires, open the menu with the one-line verdict, e.g. `Tests pass. Code review: 0 critical, 1 minor. Security review: not required (not Tier-1). How to finish?`:
 
 ```text
 Implementation complete on branch <branch>. What would you like to do?
 
-1. Merge back to <base-branch> locally
-2. Push and create a Pull Request
+1. Push and create a Pull Request (default)
+2. Merge back to <base-branch> locally
 3. Keep the branch as-is
 4. Discard this branch
 
 Which option?
 ```
 
-If already on `main` or `master`:
-
-```text
-Implementation complete on <branch>. What would you like to do?
-
-1. Keep the changes as-is
-2. Push <branch>
-3. Discard recent local work
-
-Which option?
-```
+**Override flags** (any one bypasses both the default and the menu, executing the named Step 6 path directly): `--merge` (merge locally), `--push` (push branch without PR), `--keep` (keep as-is), `--discard` (discard, still requires typed confirmation). `--allow-main` permits acting from `main`/`master`; `--no-auto` forces the menu.
 
 ## Step 6: Execute Choice
 
