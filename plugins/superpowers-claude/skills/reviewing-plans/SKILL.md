@@ -46,8 +46,12 @@ Each subagent must be read-only.
 
 ```text
 You are reviewing a plan, not implementing code.
-Do not modify files.
+Do not modify files. Do not commit. Read-only.
 Do not use chat history.
+Repo context:
+- repo root: <absolute path>
+- base branch: <base> (diff base for "what this plan changes")
+- you may read repo files and run `git diff <base>...HEAD`; never write, never commit
 Inputs:
 - approved spec: <path>
 - context pack: <path>
@@ -114,6 +118,22 @@ Run re-review only when:
 
 When only one section changed, re-review that section plus dependencies. Do not run the whole review carousel for typo-only edits.
 
+Cap each receipt at **max 1 round** of coordinator edit-and-re-review. After you fix the issues from a receipt and re-dispatch once:
+
+- if the re-review surfaces a **new blocking issue**, stop and escalate as `human-decision-required` — do not start another edit/re-review round on the same receipt.
+- if the re-review surfaces only non-blocking (important/minor) issues, **note** them in the findings and proceed; they do not gate execution.
+
+Escalation outcomes follow the shared cycle-limit doctrine (see `superpowers:subagent-driven-development`): `approved-amended-plan` | `human-decision-required` | `task-removed`.
+
 ## Fallback
 
-If subagents are unavailable or the human partner asks you to work inline, the main agent may perform the review inline. It must clearly label this as fallback mode and use only the approved spec, context pack, plan, and repo files as source material.
+Inline review is **coordinator-only** and allowed **only when the human partner explicitly asks** to work inline — never as an automatic reaction to the Task tool being unavailable. Label it clearly as fallback mode.
+
+Inline fallback is limited to lightweight coordinator-class checks against the saved spec, context pack, and plan:
+
+- plan structure, placeholders, and obvious internal contradictions
+- contradiction of the plan against the approved spec
+
+The coordinator must **not** do reviewer-subagent-class work inline: no repo inspection, no snippet/symbol validation, no file audits, no `git diff` reading. That work goes to fresh read-only subagents.
+
+If reviewer-subagent-class work (snippet, symbol, or repo inspection) is needed but the Task tool is genuinely unavailable, **escalate / hard-stop** — do not perform it inline. The coordinator never substitutes itself for a subagent.
