@@ -32,7 +32,7 @@ Consume its structured verdict:
 // verdict: approved | issues-found | blocked
 ```
 
-The coordinator then applies concrete plan edits for `blocking`/`important` findings, observing the cycle limit (max 1 re-review round — see Re-review Rules). Re-review = run the same Workflow again in `targeted` mode over the changed sections. The Workflow never edits the plan; patching stays with the coordinator.
+The coordinator then applies concrete plan edits for `blocking`/`important` findings, observing the cycle limit (max 1 re-review round — see Re-review Rules). Re-review = run the same Workflow again in a mode **no narrower than the dimensions that raised the fixed findings**: the **same mode as the original review**, and `full` if a resolved blocker was in `risk` or `security`. Do **not** downgrade to `targeted` — a narrower set would skip the very dimension (e.g. `risk`/`security`) that raised the blocker, so the fix could not be verified. The Workflow never edits the plan; patching stays with the coordinator.
 
 Use the **Fallback (manual subagent dispatch)** path instead when the Workflow tool is unavailable — most commonly because you are running from inside a subagent (the Workflow tool can only be called by the main agent; nesting throws), or for a trivial plan where a full fan-out is overkill.
 

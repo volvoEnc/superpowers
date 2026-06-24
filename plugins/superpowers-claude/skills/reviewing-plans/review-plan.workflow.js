@@ -195,7 +195,9 @@ const dimensions = REVIEWER_SETS[mode] || REVIEWER_SETS.full;
     .filter(Boolean)
     .filter((o) => !(o.v && o.v.verdict === 'REFUTED'))
     .map((o) => ({
-      severity: (o.v && o.v.severity) || o.finding.severity,
+      // Severity stays the reviewer's. The verifier only refutes/confirms evidence; it must NOT
+      // downgrade a blocking finding (a confirmed-but-"echoed-lower" verdict could un-block approval).
+      severity: o.finding.severity,
       file: o.finding.file,
       problem: o.finding.problem,
       evidence: (o.v && o.v.evidence) || o.finding.evidence,
