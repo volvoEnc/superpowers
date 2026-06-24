@@ -51,6 +51,8 @@ After all tasks, dispatch a final reviewer, capture its result, then use `superp
 
 Execution state lives on disk so the orchestrator stays light and can resume after a compaction. Do not keep run progress only in chat.
 
+**Before the first write** of `state.json` or any per-task receipt, ensure the run directory exists so the write does not fail: `mkdir -p docs/superpowers/runs/<run>/`.
+
 After **each task** completes (or blocks), update `state.json` in the run directory (`docs/superpowers/runs/<run>/state.json`). Write the fields `current_task`, `completed_tasks`, `blocked_tasks`, and `last_green_commit`. The full schema — including these fields and their shapes — is single-sourced in `superpowers:phase-handoff` (`## State JSON`); reference it there, do not redefine field shapes here.
 
 Each task also gets a durable **per-task receipt** at `docs/superpowers/runs/<run>/task-NNN-result.md` (NNN = zero-padded task number). The receipt captures the implementer status, what was built, test results, files changed, review verdicts, and any deferred findings. This file is the artifact — it survives compaction.
@@ -72,7 +74,7 @@ Built-in tools **replace the mechanical-quality role only** — they do not repl
 
 After the quality reviewer passes, on the live diff for that task:
 
-1. Run `/code-review` at **low** effort for mechanical issues.
+1. Run `/code-review` at **low** effort for mechanical issues. This per-task built-in review is **ephemeral**: it gates the current task only and must **not** be written as the cacheable `code_review_verdict` in `state.json`. That field is reserved for the **branch-scope**, `>=medium`-effort review produced at verification/finishing (`scope:"branch"`). If you do record the per-task result, stamp it `scope:"task"`, `effort:"low"` so `superpowers:finishing-a-development-branch` correctly ignores it as a finishing-quality verdict. (Field shapes are single-sourced in `superpowers:phase-handoff`.)
 2. Run `/simplify` for refactor cleanup (quality only — it does not hunt for bugs; `/code-review` does that). Skip if the implementer already ran `/simplify` in the TDD REFACTOR phase for this task.
 3. If the task touches **Tier-1** areas, run `/security-review`. Tiers are defined once in `superpowers:verification-before-completion` ("Security-Review Risk Tiers") — do not redefine them here.
 4. Resolve findings (or consciously defer).
@@ -99,7 +101,7 @@ See `../../docs/review-integration-doctrine.md` for the full automation-vs-judgm
 **implementation-wrong vs plan-wrong.** Diagnose before retrying:
 
 - **implementation-wrong** (task is correct, the build diverged) → re-dispatch a fresh subagent with a narrowed **fix scope** (counts against the 2-attempt limit).
-- **plan-wrong** (the task itself is wrong, ambiguous, or unbuildable) → **escalate immediately**. Do not auto-retry — retrying would mask a wrong plan.
+- **plan-wrong** (the task itself is wrong, ambiguous, or unbuildable) → **stop the run and escalate immediately**. Halt the per-task loop, report the escalation outcome (`human-decision-required`) in `state.json` and the task receipt, and do **not** process any further tasks until the human responds. Do not auto-retry — retrying would mask a wrong plan, and continuing to later tasks would build on a broken plan.
 
 **Categorize findings Blocking vs Deferred.** Blocking findings must be resolved (or the task escalated) before marking complete. Deferred findings are recorded in the task receipt and carried forward, not silently dropped.
 
@@ -111,7 +113,9 @@ Never:
 - Create a worktree unless explicitly requested
 - Skip spec review or quality review
 - Move to the next task while review issues remain open
-- Retry a blocked task more than twice instead of escalating (`approved-amended-plan` / `human-decision-required` / `task-removed`), or auto-retry a plan-wrong task instead of escalating it
+- Retry a blocked task more than twice instead of escalating (`approved-amended-plan` / `human-decision-required` / `task-removed`), or auto-retry a plan-wrong task instead of stopping the run and escalating it
+- Process further tasks after a plan-wrong escalation instead of halting the run until the human responds
+- Write a per-task built-in `/code-review` result as the cacheable branch-scope `code_review_verdict` in `state.json`
 - Carry a subagent's raw working context or transcript forward instead of its compact result
 - Reuse a prior subagent's result as memory in place of dispatching a fresh subagent with the exact follow-up scope
 

@@ -27,6 +27,7 @@ Write `state.json` after each task so the run survives a compact and is resumabl
 - The schema is defined once in `superpowers:phase-handoff` (section "State JSON"). Do not redefine fields here — reference it. Use the exact field names: `current_task`, `completed_tasks`, `blocked_tasks`, `last_green_commit` (plus the evidence fields `plan_risk_tier`, `test_results`, `code_review_verdict`, `security_review_status` written by `superpowers:verification-before-completion`).
 - After each task: update `current_task` → next, append to `completed_tasks`, set `last_green_commit` to the last commit whose verification passed. On a blocked task, append to `blocked_tasks` instead.
 - After verifications run, refresh the evidence fields per `superpowers:verification-before-completion` rather than restating verdicts in chat.
+- **Writer authority:** the skill that *runs* a given review writes that verdict (SHA-stamped, scope-stamped). `superpowers:verification-before-completion` is not the sole writer — when executing-plans runs the Step 2a branch `/security-review`, executing-plans writes the branch `security_review_status` itself. No single-writer conflict.
 - On resume after a compact, rebuild from `state.json` on disk, not from the chat transcript.
 
 ## Step 2: Execute Tasks
@@ -44,10 +45,15 @@ Before handing off to finishing, assess the security risk of the accumulated bra
 
 1. Re-read the plan's per-task risk assessment. Determine whether any completed task touched a **Tier-1** area. Tier-1 is defined once in `superpowers:verification-before-completion` → section "Security-Review Risk Tiers". Do not redefine the list here — consult that section.
 2. **If any task was Tier-1: auto-run `/security-review` on the accumulated branch diff — no human approval gate.** `/security-review` is a Claude Code built-in (no `superpowers:` prefix). Then handle the verdict:
-   - No critical findings → record `security_review_status` clean in `state.json` and continue.
-   - Critical findings → attempt one autonomous fix cycle (bounded by the same retry limits as the per-task loop — see `superpowers:subagent-driven-development`), then re-run `/security-review` once.
-   - If critical findings persist after the fix-and-re-run cycle → **escalate** (`human-decision-required`); record `security_review_status` as `critical-open`. **Block handoff only on unresolved critical findings** — never on non-critical findings.
-3. **If no task was Tier-1:** record "plan risk: not Tier-1, /security-review not required" in `state.json` and continue.
+   - No critical findings → record `security_review_status` clean in `state.json` (per the schema, see below) and continue.
+   - Critical findings → **dispatch a fresh subagent (Task tool) with a narrowed fix scope** to perform the fix (do NOT fix inline — inline work is coordinator-only; security fixes are subagent-class work), then re-run `/security-review` once. This branch security-gate fix cycle is **exactly one cycle**, independent of the per-task 2-attempt fix pool (that pool is per implementation task — see `superpowers:subagent-driven-development`).
+   - If critical findings persist after this one fix-and-re-run cycle → **escalate** (`human-decision-required`); record `security_review_status` as `critical-open`. **Block handoff only on unresolved critical findings** — never on non-critical findings.
+3. **If no task was Tier-1:** set `plan_risk_tier` to the actual tier (`"Tier-2"` or `"Tier-3"`) and record `security_review_status` as `{ required: false, verdict: "n/a", scope: "branch", commit: <HEAD sha>, timestamp: <iso> }` in `state.json`, then continue. Do not write a prose string.
+
+**Recording risk/security to `state.json`** (schema is single-sourced in `superpowers:phase-handoff` → "State JSON" — do not redefine it):
+
+- `plan_risk_tier`: the enum value (`"Tier-1"` | `"Tier-2"` | `"Tier-3"`), never a prose sentence.
+- `security_review_status`: `{ required, verdict, scope: "branch", commit: <HEAD sha>, timestamp: <iso> }`. For a Tier-1 clean run: `{ required: true, verdict: "clean", scope: "branch", commit: <HEAD sha>, timestamp: <iso> }`; for unresolved critical findings use `verdict: "critical-open"`.
 
 ## Step 3: Complete Development
 

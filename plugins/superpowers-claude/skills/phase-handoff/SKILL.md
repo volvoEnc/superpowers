@@ -128,6 +128,8 @@ Save a small machine-readable state file:
 }
 ```
 
+In `security_review_status`, `required` is a boolean: `true` when the change is Tier-1 (security review mandatory), `false` otherwise — and verdict `n/a` pairs with `required: false`.
+
 Each evidence field records the `commit` and `timestamp` of the run that produced it. A cached verdict (`test_results`, `code_review_verdict`, `security_review_status`) is valid only when its `commit == current HEAD` SHA. Any new commit invalidates every cached verdict. Downstream skills such as `superpowers:finishing-a-development-branch` re-run the corresponding check whenever the SHA differs, the verdict is not clean, or the field is missing. This schema is defined here once; other skills reference these field names and must not redefine them.
 
 Keep this file boring. Boring state survives compaction.

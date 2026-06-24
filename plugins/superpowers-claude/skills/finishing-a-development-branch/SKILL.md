@@ -24,6 +24,7 @@ If tests fail, report failures and stop.
 ### Inputs (optional)
 
 - **plan risk: `[Tier-1 | not]`** — if the caller (e.g. `executing-plans` Step 3) passes the plan's risk tier, use it as-is. Do **not** re-derive the tier. If not passed, fall back to detecting Tier-1 from the branch diff per `verification-before-completion` (`## Security-Review Risk Tiers`).
+- **override flags** — `--no-auto`, `--allow-main`, `--merge`, `--push`, `--keep`, `--discard` are passed by the caller/human and consumed in Step 5 (see "Override flags" there). Default (no flag) takes the auto-PR path.
 
 Read durable evidence before running any review. If `docs/superpowers/runs/<run>/state.json` exists, load it — its schema (incl. `code_review_verdict`, `security_review_status`, `plan_risk_tier`) is defined once in `superpowers:phase-handoff`; do not redefine it here. The cached verdicts drive Step 2's skip/re-run decision.
 
@@ -46,6 +47,8 @@ Run `/code-review` at **medium** effort against the branch diff:
 - **Clean** → proceed.
 
 If the branch is **Tier-1** (use the passed `plan risk` from Step 1 if provided, else detect from the diff), additionally run `/security-review` before presenting options — unless its cached `security_review_status` is clean for the current HEAD (`cached: clean`). Tier-1 is defined once in `verification-before-completion` (see its `## Security-Review Risk Tiers` section) — do not redefine it here. If not Tier-1, skip `/security-review` (adaptive by risk).
+
+- **Critical security findings** → STOP. If `/security-review` (or a branch-scoped cached `security_review_status` for the current HEAD) is `critical-open`, do **not** present options and do **not** take the auto-PR/auto-push default. Report the critical findings and require they be resolved before finishing can proceed. Security fixes are subagent-class work — dispatch a fresh subagent (Task tool) to fix them; never patch inline. After fixes land, re-run tests and re-run `/security-review` until no critical findings remain (a new commit invalidates the cache). This mirrors the `/code-review` critical STOP above.
 
 This gate is automated hygiene (bugs, dead code, style) plus risk-tiered security; it does not replace manual reviewer subagents for architecture/intent/domain judgment. See `../../docs/review-integration-doctrine.md` for the full division of labor and the effort ladder.
 
@@ -148,6 +151,7 @@ Never:
 
 - Proceed with failing tests
 - Present completion options with unresolved critical `/code-review` findings
+- Present completion options or take the auto-PR default with a `critical-open` `/security-review` verdict
 - Skip `/security-review` when the branch touched Tier-1 areas
 - Merge without verifying tests on the result
 - Delete work without typed confirmation
