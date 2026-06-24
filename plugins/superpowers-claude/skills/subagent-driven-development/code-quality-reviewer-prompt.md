@@ -14,6 +14,9 @@ Task tool (general-purpose):
   PLAN_OR_REQUIREMENTS: Task N from [plan-file]
   BASE_SHA: [commit before task]
   HEAD_SHA: [current commit]
+  REPO_ROOT: [absolute path]
+  BRANCH: [task branch name]
+  NOTE: Read-only — you may read files and run `git diff`, but do not commit and do not edit files.
 ```
 
 **In addition to standard code quality concerns, the reviewer should check:**

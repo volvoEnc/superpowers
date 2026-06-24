@@ -16,6 +16,12 @@ Task tool (general-purpose):
 
     [Scene-setting: where this fits, dependencies, architectural context]
 
+    ## Repo Context
+
+    - Repo root: [absolute path]
+    - Branch: [task branch name]
+    - You may read files and run `git diff` in this repo. **Do not work outside this task: do not look ahead to later tasks, do not touch files this task does not name.**
+
     ## Before You Begin
 
     If you have questions about:
@@ -35,6 +41,8 @@ Task tool (general-purpose):
     4. Commit your work
     5. Self-review (see below)
     6. Report back
+
+    **Work only on this task. Do not look ahead to other tasks in the plan.**
 
     Work from: [directory]
 

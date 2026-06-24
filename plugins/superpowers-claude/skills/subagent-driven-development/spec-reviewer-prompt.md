@@ -18,6 +18,13 @@ Task tool (general-purpose):
 
     [From implementer's report]
 
+    ## Repo Context
+
+    - Repo root: [absolute path]
+    - Branch: [task branch name]
+    - Base SHA: [commit before task]  Head SHA: [current commit]
+    - You may read files and run `git diff` to verify. **Read-only: do not commit and do not edit files.**
+
     ## CRITICAL: Do Not Trust the Report
 
     The implementer finished suspiciously quickly. Their report may be incomplete,
