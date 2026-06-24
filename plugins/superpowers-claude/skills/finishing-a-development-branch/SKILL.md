@@ -34,7 +34,7 @@ Tests passing is necessary, not sufficient. Before presenting completion options
 **Cache check (per SHA).** First compute the current HEAD SHA (`git rev-parse HEAD`). For each cached verdict in `state.json` (`code_review_verdict`, `security_review_status`):
 
 - `code_review_verdict`: `commit` == HEAD **and** `verdict == "clean"` **and** `effort` is `medium` or higher **and** `scope == "branch"` → **skip** `/code-review`, log `cached: clean`. A low-effort or task-scoped verdict — e.g. the per-task `/code-review` that `subagent-driven-development` records at **low** effort on a single task diff — does **not** satisfy this gate's **medium, full-branch** review. Re-run.
-- `security_review_status`: `commit` == HEAD **and** `verdict == "clean"` → **skip** `/security-review`, log `cached: clean`. A cached `n/a` may be reused **only when the current risk decision (Step 1 `plan risk`) is not Tier-1**. If the current finish is Tier-1, a stale `n/a` at the same SHA does **not** satisfy the gate — run `/security-review`.
+- `security_review_status`: `commit` == HEAD **and** `verdict == "clean"` **and** `scope == "branch"` → **skip** `/security-review`, log `cached: clean`. A **task-scoped** security verdict — e.g. `/security-review` that `subagent-driven-development` ran on a single Tier-1 task diff — does **not** satisfy the mandatory **accumulated-branch** security review (it misses cross-task interactions); re-run. A cached `n/a` may be reused **only when the current risk decision (Step 1 `plan risk`) is not Tier-1**; under Tier-1 a stale `n/a` at the same SHA does **not** satisfy the gate — run `/security-review`.
 - SHA differs **or** the verdict is not clean **or** no record exists → **re-run** that review below.
 
 Any new commit invalidates the cache (verdicts are bound to a SHA). Skipping a clean cached review avoids redoing fresh-subagent work the orchestrator already paid for.
@@ -64,21 +64,23 @@ If `STATUS` is non-empty, report dirty files before destructive options.
 ## Step 4: Determine Base Branch
 
 ```bash
-# 1. Prefer the branch's configured upstream base, if any.
-git rev-parse --abbrev-ref @{upstream} 2>/dev/null
-# 2. Else enumerate long-lived base branches that exist locally.
-for b in main master dev; do git show-ref --verify --quiet "refs/heads/$b" && echo "$b"; done
+# Plausible long-lived PR bases: exist locally, are NOT the current branch, and are ancestors of HEAD.
+CUR=$(git rev-parse --abbrev-ref HEAD)
+for b in main master dev; do
+  git show-ref --verify --quiet "refs/heads/$b" && [ "$b" != "$CUR" ] \
+    && git merge-base --is-ancestor "$b" HEAD 2>/dev/null && echo "$b"
+done
 ```
 
-Resolve the base deterministically: prefer the tracked upstream. Otherwise, if **exactly one** long-lived base branch exists, use it. If **two or more** plausible bases exist (e.g. both `main` and `master`, or a configured release branch), the base is **ambiguous** — do **not** guess. `git merge-base HEAD main` succeeding does not prove `main` is the intended base when other candidates share history. An ambiguous base fires the Step 5 ambiguity trigger: ask which base branch to use; do not auto-PR against a guessed target.
+The PR base is a **long-lived integration branch**, not the feature branch's push-tracking upstream. Do **not** use `@{upstream}` to pick it: after `git push -u origin <feature>` the upstream is `origin/<feature>` (the head branch itself), so passing it to `gh pr create --base` would target the branch against itself or fail. Resolve from the candidates above: **exactly one** → that is the base; **two or more** (e.g. both `main` and `master`, or a release branch) → **ambiguous**, do not guess (`git merge-base HEAD main` succeeding does not prove `main` is intended when other candidates share history); **none** → ask. An ambiguous or empty result fires the Step 5 ambiguity trigger: ask which base branch to use; do not auto-PR against a guessed target.
 
 ## Step 5: Present Options
 
-**Default: auto-push branch + open PR (no menu).** When ALL of these hold — on a feature branch (not `main`/`master`), clean working tree, an unambiguous base branch (from Step 4), and no `--no-auto` flag — do NOT ask. Auto-execute the "push and create PR" path in Step 6: push the branch and open a PR with `gh` (never auto-merge). Log a one-line verdict first, e.g. `Tests pass. Code review: cached clean. Security: not required (not Tier-1). Opening PR.`
+**Default: auto-push branch + open PR (no menu).** When ALL of these hold — on a feature branch that is **not** a long-lived base (not `main`/`master`/`dev` and not equal to the resolved base from Step 4), clean working tree, an unambiguous base branch (from Step 4), and no `--no-auto` flag — do NOT ask. Auto-execute the "push and create PR" path in Step 6: push the branch and open a PR with `gh` (never auto-merge). Log a one-line verdict first, e.g. `Tests pass. Code review: cached clean. Security: not required (not Tier-1). Opening PR.`
 
 **Show the menu ONLY on an ambiguity trigger:**
 
-- On `main`/`master` → **error** and stop unless `--allow-main` was passed (refuse to push/PR from the trunk silently).
+- On a long-lived base branch (`main`/`master`/`dev`), **or** when the current branch equals the resolved base → **error** and stop unless `--allow-main` was passed. Never push/PR from a protected/base branch, and never open a PR of a branch against itself.
 - Dirty working tree (Step 3 `STATUS` non-empty).
 - Ambiguous base branch (Step 4 could not resolve a single base).
 - Explicit `--no-auto` flag.

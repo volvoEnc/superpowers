@@ -124,7 +124,7 @@ Save a small machine-readable state file:
   "plan_risk_tier": "Tier-1 | Tier-2 | Tier-3",
   "test_results":           { "summary": "34/34", "exit_code": 0, "commit": "<sha>", "timestamp": "<iso>" },
   "code_review_verdict":    { "verdict": "clean | issues-found | blocked", "effort": "low | medium | high | max", "scope": "branch | task", "commit": "<sha>", "timestamp": "<iso>" },
-  "security_review_status": { "required": true, "verdict": "clean | critical-open | n/a", "commit": "<sha>", "timestamp": "<iso>" }
+  "security_review_status": { "required": true, "verdict": "clean | critical-open | n/a", "scope": "branch | task", "commit": "<sha>", "timestamp": "<iso>" }
 }
 ```
 

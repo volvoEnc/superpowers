@@ -94,7 +94,7 @@ The tight line goes in your context. **Additionally, write the structured eviden
 
 - `test_results` — when you ran the test command (summary, exit_code).
 - `code_review_verdict` — when `/code-review` ran (verdict, effort, and `scope`: `branch` for a full-branch review, `task` for a single-task diff). `finishing` only reuses a cached verdict that is `effort` ≥ medium **and** `scope == "branch"`, so always stamp both — a low-effort or task-scoped review will (correctly) not satisfy the final branch gate.
-- `security_review_status` — when `/security-review` ran or was decided n/a (required, verdict).
+- `security_review_status` — when `/security-review` ran or was decided n/a (required, verdict, and `scope`: `branch` for the accumulated-branch review, `task` for a single-task diff). `finishing` only reuses a `scope == "branch"` security verdict, so always stamp it — a task-scoped security pass will (correctly) not satisfy the mandatory branch gate.
 - `plan_risk_tier` — the tier from the Security-Review Risk Tiers table above, if known.
 
 **Stamp each record with the current commit SHA** (`git rev-parse HEAD`) in its `commit` field, plus a `timestamp`. The SHA stamp is load-bearing: `finishing` SHA-validates each cached verdict against HEAD — matching SHA + clean verdict → skip the re-review; differing SHA → re-run. Write only fields you actually verified (a record is a claim — same rule as the tight line).
