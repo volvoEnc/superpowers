@@ -20,7 +20,7 @@ Workflow({
 })
 ```
 
-The base directory is the absolute path given at skill launch ("Base directory for this skill: …"). Build `scriptPath` from it — never guess a relative path.
+The base directory is the absolute path Claude Code prepends to this skill's content at every launch ("Base directory for this skill: …") — it is deterministic, not a guess. Build `scriptPath` from it verbatim. If that line is somehow absent (path not known), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human.
 
 - `mode` is one of `light | targeted | full` (see Review Modes); it selects which reviewer dimensions run and how deep, not how many rounds.
 - The script runs **one** find→verify pass: parallel reviewers produce findings, then each finding is adversarially verified and REFUTED findings are dropped. It does not loop and it does not patch the plan.

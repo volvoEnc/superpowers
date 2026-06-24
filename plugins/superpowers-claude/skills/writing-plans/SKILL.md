@@ -13,7 +13,7 @@ The main agent is the orchestrator, not the plan author. It prepares durable inp
 
 For non-trivial work, the default authoring path is the shipped Workflow script. The main agent (coordinator) runs it directly — Workflow is invokable only by the main agent, never from inside a subagent.
 
-Compute the two absolute paths from this skill's base directory (the "Base directory for this skill: …" line provided at startup):
+Compute the bundled paths from this skill's base directory — the absolute path Claude Code prepends to this skill's content at every launch ("Base directory for this skill: …"). It is deterministic, not a guess. If that line is somehow absent (base dir not known), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human. Paths to compute:
 
 - `scriptPath` = `<this skill base>/write-plan.workflow.js`
 - `reviewWorkflowPath` = the reviewing-plans script. Take this skill's base, replace the trailing `writing-plans` segment with `reviewing-plans`, and append `/review-plan.workflow.js`. Result: `<…/skills>/reviewing-plans/review-plan.workflow.js`. Pass it in `args` so the child review workflow inside `write-plan.workflow.js` can be located.
