@@ -66,18 +66,22 @@ If `STATUS` is non-empty, report dirty files before destructive options.
 
 ## Step 4: Determine Base Branch
 
+The PR base is the repository's **default branch** — ask GitHub authoritatively rather than guessing it from local git:
+
 ```bash
-# Plausible long-lived PR bases: exist locally OR as origin/<b>, are NOT the current branch, and are ancestors of HEAD.
-CUR=$(git rev-parse --abbrev-ref HEAD)
-for b in main master dev; do
-  if   git show-ref --verify --quiet "refs/heads/$b";          then ref="$b"
-  elif git show-ref --verify --quiet "refs/remotes/origin/$b"; then ref="origin/$b"
-  else continue; fi
-  [ "$b" != "$CUR" ] && git merge-base --is-ancestor "$ref" HEAD 2>/dev/null && echo "$b"
-done
+BASE=$(gh repo view --json defaultBranchRef -q .defaultBranchRef.name 2>/dev/null)
 ```
 
-The PR base is a **long-lived integration branch**, not the feature branch's push-tracking upstream. Do **not** use `@{upstream}` to pick it: after `git push -u origin <feature>` the upstream is `origin/<feature>` (the head branch itself), so passing it to `gh pr create --base` would target the branch against itself or fail. Resolve from the candidates above: **exactly one** → that is the base; **two or more** (e.g. both `main` and `master`, or a release branch) → **ambiguous**, do not guess (`git merge-base HEAD main` succeeding does not prove `main` is intended when other candidates share history); **none** → ask. An ambiguous or empty result fires the Step 5 ambiguity trigger: ask which base branch to use; do not auto-PR against a guessed target.
+Use `$BASE` as the PR target (`gh pr create --base "$BASE"`). For the standard "feature → default branch" flow this is correct by construction.
+
+Do **not** infer the base from local-git heuristics — they are unreliable and were the source of repeated wrong-base bugs: `git merge-base` matches many ancestors; `@{upstream}` is the feature branch's own push target (`origin/<feature>`, the head — not the base); and several long-lived branches can each look plausible.
+
+**Ask the human (Step 5 ambiguity trigger) only when the repo default is not the intended base:**
+
+- `gh` returned empty (offline, or no GitHub remote) → ask which base, or offer a local merge.
+- The branch was deliberately cut from a **non-default** long-lived branch (stacked PR, release/`dev` work) — detect with `git merge-base --is-ancestor "origin/$BASE" HEAD`; if that fails, HEAD does not descend from the default, so the base may differ → ask.
+
+Otherwise `$BASE` is the base; proceed.
 
 ## Step 5: Present Options
 
@@ -87,7 +91,7 @@ The PR base is a **long-lived integration branch**, not the feature branch's pus
 
 - On a long-lived base branch (`main`/`master`/`dev`), **or** when the current branch equals the resolved base → **error** and stop unless `--allow-main` was passed. Never push/PR from a protected/base branch, and never open a PR of a branch against itself.
 - Dirty working tree (Step 3 `STATUS` non-empty).
-- Ambiguous base branch (Step 4 could not resolve a single base).
+- Ambiguous base (Step 4: `gh` could not determine the default branch, or HEAD does not descend from it — likely stacked/release work).
 - Explicit `--no-auto` flag.
 
 When a trigger fires, open the menu with the one-line verdict, e.g. `Tests pass. Code review: 0 critical, 1 minor. Security review: not required (not Tier-1). How to finish?`:
@@ -110,7 +114,7 @@ Which option?
 ### Feature branch: merge locally
 
 ```bash
-git checkout <base-branch>
+git checkout "$BASE"
 git pull
 git merge <feature-branch>
 <test command>
@@ -123,10 +127,10 @@ Only delete the feature branch after merge and tests succeed.
 
 ```bash
 git push -u origin <feature-branch>
-gh pr create --base <base-branch> --title "<title>" --body "<summary and test plan>"
+gh pr create --base "$BASE" --title "<title>" --body "<summary and test plan>"
 ```
 
-`<base-branch>` is the base resolved in Step 4 — always pass it explicitly. Omitting `--base` makes `gh pr create` fall back to `branch.<current>.gh-merge-base` or the repo default branch, which can target the wrong branch when the real base is `master`/`dev`/a release branch.
+`$BASE` is the repository default branch resolved in Step 4 — always pass it explicitly (never omit `--base`).
 
 ### Keep branch
 
