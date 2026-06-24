@@ -187,7 +187,11 @@ const dimensions = REVIEWER_SETS[mode] || REVIEWER_SETS.full;
         label: 'verify:' + finding.severity,
         phase: 'Verify',
         agentType: 'Explore'
-      }).then((v) => ({ finding: finding, v: v }))
+      })
+        .then((v) => ({ finding: finding, v: v }))
+        // Fail-safe: if the verifier REJECTS (schema retries exhausted / runtime error), keep the
+        // finding as UNVERIFIED rather than letting parallel() null it and filter() drop it.
+        .catch(() => ({ finding: finding, v: null }))
     )
   );
 
