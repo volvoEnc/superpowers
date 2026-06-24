@@ -33,7 +33,7 @@ Tests passing is necessary, not sufficient. Before presenting completion options
 
 **Cache check (per SHA).** First compute the current HEAD SHA (`git rev-parse HEAD`). For each cached verdict in `state.json` (`code_review_verdict`, `security_review_status`):
 
-- `code_review_verdict`: `commit` == HEAD **and** `verdict == "clean"` → **skip** `/code-review`, log `cached: clean`.
+- `code_review_verdict`: `commit` == HEAD **and** `verdict == "clean"` **and** `effort` is `medium` or higher **and** `scope == "branch"` → **skip** `/code-review`, log `cached: clean`. A low-effort or task-scoped verdict — e.g. the per-task `/code-review` that `subagent-driven-development` records at **low** effort on a single task diff — does **not** satisfy this gate's **medium, full-branch** review. Re-run.
 - `security_review_status`: `commit` == HEAD **and** `verdict == "clean"` → **skip** `/security-review`, log `cached: clean`. A cached `n/a` may be reused **only when the current risk decision (Step 1 `plan risk`) is not Tier-1**. If the current finish is Tier-1, a stale `n/a` at the same SHA does **not** satisfy the gate — run `/security-review`.
 - SHA differs **or** the verdict is not clean **or** no record exists → **re-run** that review below.
 
@@ -64,10 +64,13 @@ If `STATUS` is non-empty, report dirty files before destructive options.
 ## Step 4: Determine Base Branch
 
 ```bash
-git merge-base HEAD main 2>/dev/null || git merge-base HEAD master 2>/dev/null
+# 1. Prefer the branch's configured upstream base, if any.
+git rev-parse --abbrev-ref @{upstream} 2>/dev/null
+# 2. Else enumerate long-lived base branches that exist locally.
+for b in main master dev; do git show-ref --verify --quiet "refs/heads/$b" && echo "$b"; done
 ```
 
-If unclear, ask which base branch to use.
+Resolve the base deterministically: prefer the tracked upstream. Otherwise, if **exactly one** long-lived base branch exists, use it. If **two or more** plausible bases exist (e.g. both `main` and `master`, or a configured release branch), the base is **ambiguous** — do **not** guess. `git merge-base HEAD main` succeeding does not prove `main` is the intended base when other candidates share history. An ambiguous base fires the Step 5 ambiguity trigger: ask which base branch to use; do not auto-PR against a guessed target.
 
 ## Step 5: Present Options
 

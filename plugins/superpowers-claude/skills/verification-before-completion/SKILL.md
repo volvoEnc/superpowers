@@ -93,7 +93,7 @@ Each field is a claim — only include a field you actually ran the command for 
 The tight line goes in your context. **Additionally, write the structured evidence into `state.json`** so downstream skills (`finishing-a-development-branch`) can read it without re-running anything. Use the shared schema fields defined in `superpowers:phase-handoff` — do not redefine the schema here:
 
 - `test_results` — when you ran the test command (summary, exit_code).
-- `code_review_verdict` — when `/code-review` ran (verdict, effort).
+- `code_review_verdict` — when `/code-review` ran (verdict, effort, and `scope`: `branch` for a full-branch review, `task` for a single-task diff). `finishing` only reuses a cached verdict that is `effort` ≥ medium **and** `scope == "branch"`, so always stamp both — a low-effort or task-scoped review will (correctly) not satisfy the final branch gate.
 - `security_review_status` — when `/security-review` ran or was decided n/a (required, verdict).
 - `plan_risk_tier` — the tier from the Security-Review Risk Tiers table above, if known.
 
