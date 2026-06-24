@@ -88,6 +88,17 @@ Example: `Tests pass [34/34, exit 0]. Build clean. Diff: 3 files +52/-7. Code re
 
 Each field is a claim — only include a field you actually ran the command for (see The Gate Function).
 
+### Persist evidence to durable state
+
+The tight line goes in your context. **Additionally, write the structured evidence into `state.json`** so downstream skills (`finishing-a-development-branch`) can read it without re-running anything. Use the shared schema fields defined in `superpowers:phase-handoff` — do not redefine the schema here:
+
+- `test_results` — when you ran the test command (summary, exit_code).
+- `code_review_verdict` — when `/code-review` ran (verdict, effort).
+- `security_review_status` — when `/security-review` ran or was decided n/a (required, verdict).
+- `plan_risk_tier` — the tier from the Security-Review Risk Tiers table above, if known.
+
+**Stamp each record with the current commit SHA** (`git rev-parse HEAD`) in its `commit` field, plus a `timestamp`. The SHA stamp is load-bearing: `finishing` SHA-validates each cached verdict against HEAD — matching SHA + clean verdict → skip the re-review; differing SHA → re-run. Write only fields you actually verified (a record is a claim — same rule as the tight line).
+
 ## Rationalization Prevention
 
 | Excuse | Reality |
