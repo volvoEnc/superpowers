@@ -66,7 +66,7 @@ const contextPackPath = `${planDir}/context-pack.md`;
   // Phase 2: Author — one subagent writes the full plan directory from sterile inputs.
   phase('Author');
   log(`Authoring plan directory at ${planDir}`);
-  const authorReceipt = await agent(
+  const authorResult = await agent(
     [
       'You are writing an implementation plan from saved artifacts.',
       'Do not use chat history. Do not implement code.',
@@ -78,10 +78,27 @@ const contextPackPath = `${planDir}/context-pack.md`;
       'Produce overview.md, task-NNN-<name>.md files, and status.json following those templates.',
       'Prefer TDD task order. Mark risk tier and review policy per task. Include concrete verification steps.',
       'If something is unknown, add an open question instead of guessing.',
-      'Return ONLY a short receipt: the plan directory path, the task files created, and a one-line summary.',
+      'Return { wrote: true ONLY IF you actually wrote the plan directory (overview.md + task files + status.json); summary: one line }. If you could not, return wrote: false with the reason.',
     ].join('\n'),
-    { label: 'plan-author', phase: 'Author' },
+    { label: 'plan-author', phase: 'Author', schema: SCOUT_SCHEMA },
   );
+
+  // Gate: never review a plan the Author did not actually write — otherwise Review could validate and
+  // approve stale files already present in planDir from an earlier run.
+  if (!authorResult || authorResult.wrote !== true) {
+    const areason = authorResult ? authorResult.summary : 'author subagent returned no result';
+    log('write-plan: plan not authored — stopping before Review (' + areason + ')');
+    return {
+      planDir: planDir,
+      review: {
+        verdict: 'blocked',
+        blocking: [{ severity: 'blocking', file: planDir, problem: 'Plan directory was not authored by the Author phase (' + areason + '). Not reviewed — re-run before proceeding.' }],
+        important: [],
+        minor: [],
+      },
+    };
+  }
+  const authorReceipt = authorResult.summary;
 
   // Phase 3: Review — reuse the shipped review workflow (one level of nesting; allowed at top level).
   phase('Review');

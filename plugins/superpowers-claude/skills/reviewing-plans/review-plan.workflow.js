@@ -226,16 +226,21 @@ const dimensions = REVIEWER_SETS[mode] || REVIEWER_SETS.full;
   // Persist the receipt so it survives compaction/handoff: the writing-plans contract and
   // superpowers:phase-handoff name <planDir>/review-findings.md as the durable review receipt.
   // Best-effort — the verdict is still returned in memory even if this write fails.
-  await agent(
-    'Write a plan-review receipt to the file ' + planDir + '/review-findings.md (create or overwrite it). ' +
-    'Render it as markdown: a verdict header, then Blocking / Important / Minor sections listing each finding. ' +
-    'Record this data verbatim:\n' +
-    'verdict: ' + verdict + '\n' +
-    'blocking: ' + JSON.stringify(blocking) + '\n' +
-    'important: ' + JSON.stringify(important) + '\n' +
-    'minor: ' + JSON.stringify(minor) + '\n' +
-    'Do not edit any other file. Return only a one-line confirmation of the path written.',
-    { label: 'persist-receipt', phase: 'Verify' }
-  );
+  try {
+    await agent(
+      'Write a plan-review receipt to the file ' + planDir + '/review-findings.md (create or overwrite it). ' +
+      'Render it as markdown: a verdict header, then Blocking / Important / Minor sections listing each finding. ' +
+      'Record this data verbatim:\n' +
+      'verdict: ' + verdict + '\n' +
+      'blocking: ' + JSON.stringify(blocking) + '\n' +
+      'important: ' + JSON.stringify(important) + '\n' +
+      'minor: ' + JSON.stringify(minor) + '\n' +
+      'Do not edit any other file. Return only a one-line confirmation of the path written.',
+      { label: 'persist-receipt', phase: 'Verify' }
+    );
+  } catch (e) {
+    // Best-effort: a failed receipt write (token budget, unwritable planDir, …) must NOT lose the verdict.
+    log('review-plan: receipt persistence failed (' + (e && e.message ? e.message : e) + ') — returning verdict anyway');
+  }
 
   return { verdict, blocking, important, minor };
