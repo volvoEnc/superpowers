@@ -18,6 +18,7 @@ const planDir = args.planDir;
 const repoRoot = args.repoRoot;
 const reviewWorkflowPath = args.reviewWorkflowPath;
 const reviewMode = args.mode || 'full';
+const templatesPath = args.templatesPath; // writing-plans SKILL.md — holds the overview/task/status/context-pack templates
 const contextPackPath = `${planDir}/context-pack.md`;
 
   // Phase 1: Scout — one read-only subagent builds the context pack.
@@ -30,7 +31,7 @@ const contextPackPath = `${planDir}/context-pack.md`;
       `Read the approved spec at: ${specPath}`,
       `Inspect the repository rooted at: ${repoRoot} (read-only; you may run git diff, but do not commit or modify anything).`,
       'Identify: relevant files and responsibilities, existing patterns, test commands, constraints, risks, and open questions.',
-      `Write the context pack to: ${contextPackPath} following the writing-plans Context Pack template.`,
+      `Write the context pack to: ${contextPackPath}; follow the Context Pack template defined in the writing-plans skill at: ${templatesPath} (read it for the exact required shape — do not guess).`,
       'Return ONLY a short receipt: the path written and a one-line summary of what the pack covers.',
     ].join('\n'),
     { label: 'context-scout', phase: 'Scout' },
@@ -46,8 +47,9 @@ const contextPackPath = `${planDir}/context-pack.md`;
       `You may read files and run git diff in ${repoRoot} to verify paths, symbols, and tests; do not commit or modify anything outside the plan directory.`,
       `Approved spec: ${specPath}`,
       `Context pack: ${contextPackPath}`,
+      `Read the plan templates (overview/task/status) from the writing-plans skill at: ${templatesPath} and conform to them exactly — do not guess the structure.`,
       `Write the plan directory at: ${planDir}`,
-      'Produce overview.md, task-NNN-<name>.md files, and status.json following the writing-plans templates (overview/task/status).',
+      'Produce overview.md, task-NNN-<name>.md files, and status.json following those templates.',
       'Prefer TDD task order. Mark risk tier and review policy per task. Include concrete verification steps.',
       'If something is unknown, add an open question instead of guessing.',
       'Return ONLY a short receipt: the plan directory path, the task files created, and a one-line summary.',

@@ -17,6 +17,7 @@ Compute the two absolute paths from this skill's base directory (the "Base direc
 
 - `scriptPath` = `<this skill base>/write-plan.workflow.js`
 - `reviewWorkflowPath` = the reviewing-plans script. Take this skill's base, replace the trailing `writing-plans` segment with `reviewing-plans`, and append `/review-plan.workflow.js`. Result: `<…/skills>/reviewing-plans/review-plan.workflow.js`. Pass it in `args` so the child review workflow inside `write-plan.workflow.js` can be located.
+- `templatesPath` = `<this skill base>/SKILL.md` (this file — it holds the overview/task/status/context-pack templates). Pass it in `args` so the Scout and Author subagents read the real templates from disk instead of guessing the structure (they are told not to use chat history).
 
 Run it:
 
@@ -27,7 +28,8 @@ Workflow({
     specPath: "<absolute path to approved spec>",
     planDir: "<absolute path to target plan directory>",
     repoRoot: "<absolute repo root>",
-    reviewWorkflowPath: "<…/skills>/reviewing-plans/review-plan.workflow.js"
+    reviewWorkflowPath: "<…/skills>/reviewing-plans/review-plan.workflow.js",
+    templatesPath: "<this skill base>/SKILL.md"
   }
 })
 ```
