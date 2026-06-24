@@ -5,3 +5,8 @@
 node_modules/
 inspo
 triage/
+
+# Superpowers workflow run artifacts — generated per run, not plugin source
+docs/superpowers/specs/
+docs/superpowers/plans/
+docs/superpowers/runs/
