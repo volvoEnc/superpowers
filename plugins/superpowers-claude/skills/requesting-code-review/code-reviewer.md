@@ -20,6 +20,18 @@ Task tool (general-purpose):
 
     {PLAN_OR_REQUIREMENTS}
 
+    ## Repository Access
+
+    **Repo root:** {REPO_ROOT}
+    **Branch:** {BRANCH}
+    **Base:** {BASE_SHA}
+    **Head:** {HEAD_SHA}
+
+    Work inside the repo root above. You may read any files and run
+    read-only git commands (`git diff`, `git show`, `git log`) to inspect
+    the change, but do not modify or commit — return your review as text
+    only. This is a review, not an implementation task.
+
     ## Git Range to Review
 
     **Base:** {BASE_SHA}
@@ -124,6 +136,8 @@ Task tool (general-purpose):
 **Placeholders:**
 - `{DESCRIPTION}` — brief summary of what was built
 - `{PLAN_OR_REQUIREMENTS}` — what it should do (plan file path, task text, or requirements)
+- `{REPO_ROOT}` — absolute path to the repository root the reviewer works in
+- `{BRANCH}` — branch under review
 - `{BASE_SHA}` — starting commit
 - `{HEAD_SHA}` — ending commit
 
