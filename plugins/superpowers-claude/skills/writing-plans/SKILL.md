@@ -39,10 +39,15 @@ Workflow({
     planDir: "<absolute path to target plan directory>",
     repoRoot: "<absolute repo root>",
     reviewWorkflowPath: "<reviewWorkflowPath printed above>",
-    templatesPath: "<templatesPath printed above>"
+    templatesPath: "<templatesPath printed above>",
+    // Optional authoritative inputs (see Source of Truth) — pass when present, else omit:
+    decisionPackPath: "<absolute path to decision pack / phase handoff, if present>",
+    constraints: "<explicit human constraints, as text, if any>"
   }
 })
 ```
+
+**Pass the authoritative inputs.** When the session has a decision pack / phase handoff artifact or explicit human constraints (see [Source of Truth](#source-of-truth)), pass them via `decisionPackPath` / `constraints` — the workflow threads them to both the Scout and the Author, exactly as the manual fallback does. Omitting them when they exist would let the plan drop required constraints. The approved spec is the only mandatory input; these two are optional and omitted when absent.
 
 The script runs Scout → Author → Review (the Review phase calls the reviewing-plans workflow via `reviewWorkflowPath`) and returns `{ planDir, review }`.
 

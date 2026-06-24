@@ -19,7 +19,26 @@ const repoRoot = args.repoRoot;
 const reviewWorkflowPath = args.reviewWorkflowPath;
 const reviewMode = args.mode || 'full';
 const templatesPath = args.templatesPath; // writing-plans SKILL.md — holds the overview/task/status/context-pack templates
+const decisionPackPath = args.decisionPackPath; // optional: decision pack OR phase handoff artifact (authoritative input, if present)
+const constraints = args.constraints;           // optional: explicit human constraints, as text (authoritative input, if present)
 const contextPackPath = `${planDir}/context-pack.md`;
+
+// Optional authoritative inputs beyond the spec — mirror the writing-plans "Source of Truth"
+// (decision pack / phase handoff; explicit human constraints). The manual fallback feeds these to
+// the scout AND the author; the workflow must too, or the default (Workflow) path is weaker than the
+// fallback and silently drops required constraints that decision-pack/handoff-driven sessions rely on.
+const authInputLines = [];
+if (decisionPackPath) {
+  authInputLines.push(
+    'Also read the decision pack / phase handoff at: ' + decisionPackPath + ' — it is an authoritative input alongside the spec; honor its decisions and any constraints it records.',
+  );
+}
+if (constraints) {
+  authInputLines.push(
+    'Explicit human constraints (authoritative — must be reflected in your output):',
+    constraints,
+  );
+}
 
   // Phase 1: Scout — one read-only subagent builds the context pack.
   phase('Scout');
@@ -38,6 +57,7 @@ const contextPackPath = `${planDir}/context-pack.md`;
       'You are building a context pack for implementation planning.',
       'Do not write a plan. Do not modify repository code. Do not use chat history.',
       `Read the approved spec at: ${specPath}`,
+      ...authInputLines,
       `Inspect the repository rooted at: ${repoRoot} — read-only for repository code (you may run git diff; do NOT commit or modify any repo source/config/test file).`,
       'Identify: relevant files and responsibilities, existing patterns, test commands, constraints, risks, and open questions.',
       `Writing the context pack is your REQUIRED output and is explicitly allowed (it is not "modifying the repo"). Write it to: ${contextPackPath}; follow the Context Pack template defined in the writing-plans skill at: ${templatesPath} (read it for the exact required shape — do not guess). You MUST create this file before returning.`,
@@ -73,6 +93,7 @@ const contextPackPath = `${planDir}/context-pack.md`;
       `You may read files and run git diff in ${repoRoot} to verify paths, symbols, and tests; do not commit or modify anything outside the plan directory.`,
       `Approved spec: ${specPath}`,
       `Context pack: ${contextPackPath}`,
+      ...authInputLines,
       `Read the plan templates (overview/task/status) from the writing-plans skill at: ${templatesPath} and conform to them exactly — do not guess the structure.`,
       `Write the plan directory at: ${planDir}`,
       'Produce overview.md, task-NNN-<name>.md files, and status.json following those templates.',
