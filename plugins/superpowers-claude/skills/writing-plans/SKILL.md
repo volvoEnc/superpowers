@@ -207,7 +207,7 @@ Any blocking issue prevents execution.
 
 ## Branch Context
 
-Before execution, use `superpowers:using-git-branches`. It auto-creates a feature branch when on `main` or `master`, so do not ask whether to create one — just invoke it and work in the resulting checkout. Do not create a worktree unless explicitly requested.
+Before execution, use `superpowers:using-git-branches`. It auto-creates a feature branch when on a long-lived base (`main`, `master`, or `dev`), so do not ask whether to create one — just invoke it and work in the resulting checkout. Do not create a worktree unless explicitly requested.
 
 ## Execution Handoff
 

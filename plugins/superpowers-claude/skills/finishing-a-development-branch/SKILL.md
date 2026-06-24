@@ -67,11 +67,13 @@ If `STATUS` is non-empty, report dirty files before destructive options.
 ## Step 4: Determine Base Branch
 
 ```bash
-# Plausible long-lived PR bases: exist locally, are NOT the current branch, and are ancestors of HEAD.
+# Plausible long-lived PR bases: exist locally OR as origin/<b>, are NOT the current branch, and are ancestors of HEAD.
 CUR=$(git rev-parse --abbrev-ref HEAD)
 for b in main master dev; do
-  git show-ref --verify --quiet "refs/heads/$b" && [ "$b" != "$CUR" ] \
-    && git merge-base --is-ancestor "$b" HEAD 2>/dev/null && echo "$b"
+  if   git show-ref --verify --quiet "refs/heads/$b";          then ref="$b"
+  elif git show-ref --verify --quiet "refs/remotes/origin/$b"; then ref="origin/$b"
+  else continue; fi
+  [ "$b" != "$CUR" ] && git merge-base --is-ancestor "$ref" HEAD 2>/dev/null && echo "$b"
 done
 ```
 
