@@ -39,12 +39,13 @@ The script runs Scout → Author → Review (the Review phase calls the reviewin
 After the workflow returns `{ planDir, review }`, the coordinator (main agent) handles patching — the script does **not** patch.
 
 1. If `review` reports blocking findings, the coordinator applies concrete plan edits for them. **Max 1 round.**
-2. Then re-run the review workflow **once**, targeted at the changed sections:
+2. Then re-run the review workflow **once**. Use a mode **no narrower than the dimensions that raised the fixed findings**: re-run in the **same mode as the original review**, and use `full` if any resolved blocker was in `risk` or `security`. Do **not** downgrade to `targeted` — a narrower set would skip the very dimension (e.g. `risk`/`security`) that raised the blocker, so the fix could not be verified.
 
    ```text
+   // reReviewMode = the original review's mode, or "full" if a fixed finding was in risk/security
    Workflow({
      scriptPath: "<…/skills>/reviewing-plans/review-plan.workflow.js",
-     args: { planDir, specPath, contextPackPath, repoRoot, mode: "targeted" }
+     args: { planDir, specPath, contextPackPath, repoRoot, mode: reReviewMode }
    })
    ```
 

@@ -149,20 +149,28 @@ const dimensions = REVIEWER_SETS[mode] || REVIEWER_SETS.full;
     )
   );
 
-  // Fail-safe: if every reviewer subagent failed (no results at all), do NOT fall through
-  // to an empty-findings "approved" — that would be a false clean. Return blocked.
-  const okReviews = reviewResults.filter(Boolean);
-  if (dimensions.length > 0 && okReviews.length === 0) {
-    log('review-plan: all reviewers failed — returning blocked (review incomplete)');
-    return {
-      verdict: 'blocked',
-      blocking: [{ severity: 'blocking', file: planDir, problem: 'Plan review did not complete: every reviewer subagent failed to return results. Re-run review before trusting any approval.' }],
-      important: [],
-      minor: []
-    };
+  // Fail-safe: a missing reviewer (null) means that dimension was NOT reviewed. Every selected
+  // dimension must pass before approval, so ANY missing selected reviewer makes the review
+  // INCOMPLETE — surface one blocking finding per missing dimension instead of silently dropping
+  // it. A single failed reviewer (e.g. security) must never fall through to "approved".
+  const incomplete = [];
+  dimensions.forEach((dim, i) => {
+    if (!reviewResults[i]) {
+      incomplete.push({
+        severity: 'blocking',
+        file: planDir,
+        problem: 'Plan review incomplete: the "' + dim + '" reviewer returned no result (skipped or failed). This dimension was NOT checked — re-run before trusting any verdict.',
+        evidence: 'reviewer subagent for dimension "' + dim + '" returned null',
+        verify: 'STRUCTURAL'
+      });
+    }
+  });
+  if (incomplete.length > 0) {
+    log('review-plan: ' + incomplete.length + ' of ' + dimensions.length + ' reviewer(s) missing — review incomplete (blocking)');
   }
 
-  const findings = okReviews
+  const findings = reviewResults
+    .filter(Boolean)
     .flatMap((r) => (r && Array.isArray(r.findings) ? r.findings : []))
     .filter(Boolean);
 
@@ -194,7 +202,7 @@ const dimensions = REVIEWER_SETS[mode] || REVIEWER_SETS.full;
       verify: o.v ? o.v.verdict : 'UNVERIFIED'
     }));
 
-  const blocking = verified.filter((v) => v.severity === 'blocking');
+  const blocking = incomplete.concat(verified.filter((v) => v.severity === 'blocking'));
   const important = verified.filter((v) => v.severity === 'important');
   const minor = verified.filter((v) => v.severity === 'minor');
 
