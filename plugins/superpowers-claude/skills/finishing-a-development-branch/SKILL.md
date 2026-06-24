@@ -33,7 +33,8 @@ Tests passing is necessary, not sufficient. Before presenting completion options
 
 **Cache check (per SHA).** First compute the current HEAD SHA (`git rev-parse HEAD`). For each cached verdict in `state.json` (`code_review_verdict`, `security_review_status`):
 
-- `verdict.commit` == HEAD **and** the verdict is clean (`code_review_verdict.verdict == "clean"` / `security_review_status.verdict` is `clean` or `n/a`) → **skip** that review, log `cached: clean`.
+- `code_review_verdict`: `commit` == HEAD **and** `verdict == "clean"` → **skip** `/code-review`, log `cached: clean`.
+- `security_review_status`: `commit` == HEAD **and** `verdict == "clean"` → **skip** `/security-review`, log `cached: clean`. A cached `n/a` may be reused **only when the current risk decision (Step 1 `plan risk`) is not Tier-1**. If the current finish is Tier-1, a stale `n/a` at the same SHA does **not** satisfy the gate — run `/security-review`.
 - SHA differs **or** the verdict is not clean **or** no record exists → **re-run** that review below.
 
 Any new commit invalidates the cache (verdicts are bound to a SHA). Skipping a clean cached review avoids redoing fresh-subagent work the orchestrator already paid for.
@@ -112,8 +113,10 @@ Only delete the feature branch after merge and tests succeed.
 
 ```bash
 git push -u origin <feature-branch>
-gh pr create --title "<title>" --body "<summary and test plan>"
+gh pr create --base <base-branch> --title "<title>" --body "<summary and test plan>"
 ```
+
+`<base-branch>` is the base resolved in Step 4 — always pass it explicitly. Omitting `--base` makes `gh pr create` fall back to `branch.<current>.gh-merge-base` or the repo default branch, which can target the wrong branch when the real base is `master`/`dev`/a release branch.
 
 ### Keep branch
 
