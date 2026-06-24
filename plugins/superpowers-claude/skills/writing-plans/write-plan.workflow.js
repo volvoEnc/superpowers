@@ -24,7 +24,16 @@ const contextPackPath = `${planDir}/context-pack.md`;
   // Phase 1: Scout — one read-only subagent builds the context pack.
   phase('Scout');
   log(`Scouting spec ${specPath} against repo ${repoRoot}`);
-  const scoutReceipt = await agent(
+  const SCOUT_SCHEMA = {
+    type: 'object',
+    additionalProperties: false,
+    required: ['wrote', 'summary'],
+    properties: {
+      wrote: { type: 'boolean' },
+      summary: { type: 'string' },
+    },
+  };
+  const scoutResult = await agent(
     [
       'You are building a context pack for implementation planning.',
       'Do not write a plan. Do not modify repository code. Do not use chat history.',
@@ -32,10 +41,27 @@ const contextPackPath = `${planDir}/context-pack.md`;
       `Inspect the repository rooted at: ${repoRoot} — read-only for repository code (you may run git diff; do NOT commit or modify any repo source/config/test file).`,
       'Identify: relevant files and responsibilities, existing patterns, test commands, constraints, risks, and open questions.',
       `Writing the context pack is your REQUIRED output and is explicitly allowed (it is not "modifying the repo"). Write it to: ${contextPackPath}; follow the Context Pack template defined in the writing-plans skill at: ${templatesPath} (read it for the exact required shape — do not guess). You MUST create this file before returning.`,
-      'Return ONLY a short receipt: the path written and a one-line summary of what the pack covers.',
+      'Return { wrote: true ONLY IF you actually created the context pack file at the path above; summary: one line }. If you could not create it (e.g. directory missing, write denied), return wrote: false with the reason in summary.',
     ].join('\n'),
-    { label: 'context-scout', phase: 'Scout' },
+    { label: 'context-scout', phase: 'Scout', schema: SCOUT_SCHEMA },
   );
+
+  // Gate: never author a plan from a missing context pack. If the scout did not actually write it
+  // (skipped, failed, or self-reported wrote:false), stop BEFORE the Author phase.
+  if (!scoutResult || scoutResult.wrote !== true) {
+    const reason = scoutResult ? scoutResult.summary : 'scout subagent returned no result';
+    log('write-plan: context pack not created by Scout — stopping before Author (' + reason + ')');
+    return {
+      planDir: planDir,
+      review: {
+        verdict: 'blocked',
+        blocking: [{ severity: 'blocking', file: contextPackPath, problem: 'Context pack was not created by the Scout phase (' + reason + '). Plan was NOT authored — create the context pack / re-run before proceeding.' }],
+        important: [],
+        minor: [],
+      },
+    };
+  }
+  const scoutReceipt = scoutResult.summary;
 
   // Phase 2: Author — one subagent writes the full plan directory from sterile inputs.
   phase('Author');
