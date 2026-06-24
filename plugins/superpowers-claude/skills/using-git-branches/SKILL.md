@@ -9,7 +9,7 @@ Prepare the current checkout without creating git worktrees. Run this before bra
 
 ## Core Rule
 
-If the current branch is `main` or `master`, create a new task branch before continuing. The normal workflow starts design and implementation work on a branch, not on the release branch.
+If the current branch is a long-lived base (`main`, `master`, or `dev`), create a new task branch before continuing. The normal workflow starts design and implementation work on a branch, not on a release/integration branch.
 
 Use `superpowers:using-git-worktrees` only when the human partner explicitly asks for a worktree.
 
@@ -31,10 +31,10 @@ STATUS=$(git status --short)
 
 | State | Action |
 |-------|--------|
-| `main` or `master` | Create a new task branch |
+| `main`, `master`, or `dev` | Create a new task branch |
 | Other named branch | Continue there |
 | Detached HEAD | Stop and ask how to proceed |
-| Dirty tree | Report dirty files; if also on `main`/`master`, branch first and carry the files over |
+| Dirty tree | Report dirty files; if also on a long-lived base (`main`/`master`/`dev`), branch first and carry the files over |
 
 ## Step 2: Create a Task Branch
 
@@ -76,7 +76,7 @@ Branch is protected for <design|implementation> work.
 
 ## Guardrails
 
-- Keep normal feature work off `main` and `master`.
+- Keep normal feature work off long-lived bases (`main`, `master`, `dev`).
 - Keep worktree creation opt-in only.
 - Report dirty files before adding new changes.
 - Keep design-start lightweight: no setup or test run unless requested.

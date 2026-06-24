@@ -7,7 +7,7 @@ description: Use when an approved spec or requirements artifact exists and imple
 
 ## Core Rule
 
-The main agent is the orchestrator, not the plan author. It prepares durable inputs, dispatches fresh subagents (Task tool), captures their compact outputs, and stores artifacts. Each Task subagent returns its result and terminates on its own — keep only its compact result/receipt, never its raw working context. When subagents are available, do not write or review the implementation plan inline.
+The main agent is the orchestrator, not the plan author. It prepares durable inputs, dispatches fresh subagents (Task tool), captures their compact outputs, and stores artifacts. Each Task subagent returns its result and terminates on its own — keep only its compact result/receipt, never its raw working context. When subagents are available, do not write or review the implementation plan inline, and default to subagent-driven execution rather than inline.
 
 ## Source of Truth
 
@@ -62,6 +62,7 @@ Capture the result as `context-pack.md`. Keep only that compact artifact; do not
 
 Dispatch a subagent. Give it only:
 
+- repository root (absolute path)
 - approved spec path
 - context-pack path
 - explicit constraints
@@ -71,6 +72,7 @@ Dispatch a subagent. Give it only:
 You are writing an implementation plan from saved artifacts.
 Do not use chat history.
 Do not implement code.
+You may read files and run git diff in the repository root to verify paths, symbols, and tests; do not commit or modify anything.
 Write a plan directory with overview.md, task files, status.json, and concrete verification steps.
 Prefer TDD task order.
 Mark risk tier and review policy per task.
@@ -89,9 +91,13 @@ After each reviewer returns, capture its compact receipt and discard its raw wor
 
 The main agent may patch plan text only to apply concrete reviewer findings. If the plan changed materially, dispatch a fresh targeted reviewer for changed sections plus dependencies. Do not re-run full review for typo-only edits.
 
-### 6. Human approval
+### 6. Approval gate (conditional)
 
-After blocking review findings are resolved, ask the human partner to approve the plan before execution.
+Plan review (`superpowers:reviewing-plans`) always runs — only the human approval step is conditional.
+
+Auto-proceed when the review receipt is `approved` with no open blockers: log the clean review and continue straight to Execution Handoff without asking. The approved spec is the single human gate; after it, the orchestrator runs to an open PR without further approval stops.
+
+Require explicit human approval only when the review returns `issues-found` or `blocked`, or when the human partner pre-requested a plan gate. Unresolved blockers escalate per the cycle limits (see `superpowers:reviewing-plans`), they do not silently auto-proceed.
 
 ## Context Pack Template
 
@@ -201,21 +207,24 @@ Any blocking issue prevents execution.
 
 ## Branch Context
 
-Before execution, use `superpowers:using-git-branches`. Work in the current checkout. If on `main` or `master`, ask whether to create a feature branch or work directly there. Do not create a worktree unless explicitly requested.
+Before execution, use `superpowers:using-git-branches`. It auto-creates a feature branch when on a long-lived base (`main`, `master`, or `dev`), so do not ask whether to create one — just invoke it and work in the resulting checkout. Do not create a worktree unless explicitly requested.
 
 ## Execution Handoff
 
-After plan review and human approval, offer:
+Once the approval gate is cleared (auto or explicit), hand off to execution. Subagent-driven is the default whenever the Task tool is available: launch `superpowers:subagent-driven-development` (fresh subagent per task, review between tasks) without asking.
+
+Inline execution (`superpowers:executing-plans`, this session with checkpoints) is an explicit opt-in/fallback — use it only when the human partner asked for inline, not as a symmetric choice. Do not present a "which approach?" menu.
+
+Log the handoff:
 
 ```text
-Plan complete and saved to <plan overview>. Review status: <approved/issues-found>. Two execution options:
-
-1. Subagent-Driven - fresh subagent per task with review between tasks
-2. Inline Execution - execute in this session with checkpoints
-
-Which approach?
+Plan complete and saved to <plan overview>. Review status: <approved/issues-found>. Executing subagent-driven per default.
 ```
 
 ## Fallback
 
-If subagents are unavailable or the human partner asks you to work inline, the main agent may write and review the plan inline. It must still use the approved spec and context pack as the only source of truth and must not carry brainstorming history into execution.
+The fallback is coordinator-only. Inline work is limited to coordination and state (dispatching, capturing receipts, writing artifacts) and is allowed only when the human partner explicitly asks you to work inline — never as an automatic response to the Task tool being unavailable.
+
+Do not perform subagent-class work inline: no repo inspection, no snippet checking, no file audits, no context-pack generation. That work always goes to fresh read-only subagents.
+
+If subagent-class work (inspection, spec, plan, or review) is needed but the Task tool is genuinely unavailable, escalate to the human partner or hard-stop. Do not substitute the coordinator for a subagent. Whatever runs inline must still use the approved spec and context pack as the only source of truth and must not carry brainstorming history into execution.

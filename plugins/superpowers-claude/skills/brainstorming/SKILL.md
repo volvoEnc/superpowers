@@ -245,4 +245,8 @@ Drive elicitation breadth across these 12 dimensions. The Question Strategist ma
 
 ## Fallback
 
-If subagents are unavailable or the human partner asks you to work inline, the main agent may perform the same steps inline. It must still maintain the request brief, context brief, and decision pack as the only source of truth, and must not carry rejected chat history into planning.
+Inline work is allowed **only on the human partner's explicit request** — never as a reaction to subagent unavailability. Even then, the main agent's inline work is **coordination and state-keeping only**: maintaining the request brief, context brief, and decision pack as the single source of truth, recording human answers, routing artifacts, and not carrying rejected chat history into planning.
+
+The main agent must **not** do subagent-class work inline under any circumstance. Specifically forbidden inline: repo-context-scout inspection (reading files, grep, commit history), multi-angle-analyzer risk passes, approach-scout comparison, spec-author writing, spec-reviewer review, and task-intake of long files. Those always belong to fresh read-only subagents (Task tool).
+
+If subagent-class work is needed but the Task tool is genuinely unavailable, **escalate / hard-stop — do not do it inline** (not on subagent unavailability). The coordinator does not substitute itself for a subagent.
