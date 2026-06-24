@@ -13,23 +13,33 @@ The main agent is the orchestrator, not the plan author. It prepares durable inp
 
 For non-trivial work, the default authoring path is the shipped Workflow script. The main agent (coordinator) runs it directly — Workflow is invokable only by the main agent, never from inside a subagent.
 
-Compute the bundled paths from this skill's base directory — the absolute path Claude Code prepends to this skill's content at every launch ("Base directory for this skill: …"). It is deterministic, not a guess. If that line is somehow absent (base dir not known), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human. Paths to compute:
+The three bundled paths are resolved at skill-load time (via the `${CLAUDE_SKILL_DIR}` substitution) and printed here:
 
-- `scriptPath` = `<this skill base>/write-plan.workflow.js`
-- `reviewWorkflowPath` = the reviewing-plans script. Take this skill's base, replace the trailing `writing-plans` segment with `reviewing-plans`, and append `/review-plan.workflow.js`. Result: `<…/skills>/reviewing-plans/review-plan.workflow.js`. Pass it in `args` so the child review workflow inside `write-plan.workflow.js` can be located.
-- `templatesPath` = `<this skill base>/SKILL.md` (this file — it holds the overview/task/status/context-pack templates). Pass it in `args` so the Scout and Author subagents read the real templates from disk instead of guessing the structure (they are told not to use chat history).
+```!
+echo "scriptPath=${CLAUDE_SKILL_DIR}/write-plan.workflow.js"
+echo "reviewWorkflowPath=$(dirname "${CLAUDE_SKILL_DIR}")/reviewing-plans/review-plan.workflow.js"
+echo "templatesPath=${CLAUDE_SKILL_DIR}/SKILL.md"
+```
+
+Use exactly the three paths printed above — they are deterministic absolute paths to files bundled with this skill, not guesses:
+
+- `scriptPath` — the write-plan workflow to launch.
+- `reviewWorkflowPath` — the sibling reviewing-plans script; pass it in `args` so the child review workflow inside `write-plan.workflow.js` can be located.
+- `templatesPath` — this SKILL.md (it holds the overview/task/status/context-pack templates); pass it in `args` so the Scout and Author subagents read the real templates from disk instead of guessing the structure (they are told not to use chat history).
+
+If no `scriptPath=…`/`reviewWorkflowPath=…`/`templatesPath=…` lines were printed above (skill shell injection disabled by policy, e.g. `disableSkillShellExecution`), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human.
 
 Run it:
 
 ```text
 Workflow({
-  scriptPath: "<this skill base>/write-plan.workflow.js",
+  scriptPath: "<scriptPath printed above>",
   args: {
     specPath: "<absolute path to approved spec>",
     planDir: "<absolute path to target plan directory>",
     repoRoot: "<absolute repo root>",
-    reviewWorkflowPath: "<…/skills>/reviewing-plans/review-plan.workflow.js",
-    templatesPath: "<this skill base>/SKILL.md"
+    reviewWorkflowPath: "<reviewWorkflowPath printed above>",
+    templatesPath: "<templatesPath printed above>"
   }
 })
 ```
@@ -46,7 +56,7 @@ After the workflow returns `{ planDir, review }`, the coordinator (main agent) h
    ```text
    // reReviewMode = the original review's mode, or "full" if a fixed finding was in risk/security
    Workflow({
-     scriptPath: "<…/skills>/reviewing-plans/review-plan.workflow.js",
+     scriptPath: "<reviewWorkflowPath printed above>",
      args: { planDir, specPath, contextPackPath, repoRoot, mode: reReviewMode }
    })
    ```

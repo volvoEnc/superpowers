@@ -13,14 +13,22 @@ The main agent is the review coordinator, not the reviewer. It routes artifacts,
 
 When you are the **main agent** reviewing a **non-trivial plan**, run the shipped review Workflow instead of hand-dispatching reviewers. The Workflow encodes the same review dimensions (spec-coverage, plan-correctness, snippet, risk, security) as a parallel fan-out plus an adversarial-verify pass, and returns a structured verdict.
 
+The absolute path to the bundled review script is resolved at skill-load time (via the `${CLAUDE_SKILL_DIR}` substitution) and printed here:
+
+```!
+echo "scriptPath=${CLAUDE_SKILL_DIR}/review-plan.workflow.js"
+```
+
+Use exactly the `scriptPath` printed above — it is the deterministic absolute path to the script bundled with this skill, not a guess:
+
 ```text
 Workflow({
-  scriptPath: "<base directory for this skill>/review-plan.workflow.js",
+  scriptPath: "<the scriptPath printed above>",
   args: { planDir, specPath, contextPackPath, repoRoot, mode }
 })
 ```
 
-The base directory is the absolute path Claude Code prepends to this skill's content at every launch ("Base directory for this skill: …") — it is deterministic, not a guess. Build `scriptPath` from it verbatim. If that line is somehow absent (path not known), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human.
+If no `scriptPath=…` line was printed above (skill shell injection disabled by policy, e.g. `disableSkillShellExecution`), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human.
 
 - `mode` is one of `light | targeted | full` (see Review Modes); it selects which reviewer dimensions run and how deep, not how many rounds.
 - The script runs **one** find→verify pass: parallel reviewers produce findings, then each finding is adversarially verified and REFUTED findings are dropped. It does not loop and it does not patch the plan.
