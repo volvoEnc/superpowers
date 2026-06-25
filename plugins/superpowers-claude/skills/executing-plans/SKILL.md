@@ -29,6 +29,7 @@ Write `state.json` after each task so the run survives a compact and is resumabl
 - After verifications run, refresh the evidence fields per `superpowers:verification-before-completion` rather than restating verdicts in chat.
 - **Writer authority:** the skill that *runs* a given review writes that verdict (SHA-stamped, scope-stamped). `superpowers:verification-before-completion` is not the sole writer — when executing-plans runs the Step 2a branch `/security-review`, executing-plans writes the branch `security_review_status` itself. No single-writer conflict.
 - On resume after a compact, rebuild from `state.json` on disk, not from the chat transcript.
+- **Wall-clock floor (liveness):** the orchestrator evaluates the floor against `state.json` `inflight` entries **between tasks**, at **`ScheduleWakeup` wake points**, and **on resume after a compact** — the floor is the only liveness signal that survives compaction. Field shapes are single-sourced in `superpowers:phase-handoff`; reference, do not redefine. See `../../docs/liveness-doctrine.md`.
 
 ## Step 2: Execute Tasks
 
@@ -73,6 +74,7 @@ Stop immediately when:
 - An instruction is unclear.
 - The plan has critical gaps.
 - You do not understand the next step.
+- A unit is **in flight past its budget with no progress** (the wall-clock floor / detection signals in the doctrine), or on resume `state.json` shows an `inflight` entry whose `now - dispatched_at` exceeds `G × deadline_s` → enter the liveness response path: restart-fresh with carryover under `max_restarts`, escalate `human-decision-required` only when the bound exhausts or the pathological-repeat guard fires. See `../../docs/liveness-doctrine.md`.
 
 Ask for clarification rather than guessing.
 
