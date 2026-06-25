@@ -81,6 +81,37 @@ over a shared rubric + adversarial verify) and
 Both are experiments to prototype on a single real workload before treating Workflow
 as anything more than an occasional opt-in.
 
+### Liveness monitoring
+
+For long-running or Tier-1 dispatches, apply the liveness doctrine — see
+`../../docs/liveness-doctrine.md`. (Terse pointer; the constants, signals, and
+`state.json` shapes live there and in `superpowers:phase-handoff`, not here.)
+
+**Promotion rule (at dispatch).** A dispatched unit is *promoted* to
+`run_in_background` + liveness monitoring when it is **Tier-1** OR its budgeted
+`deadline_s` exceeds the promotion threshold; otherwise it stays **synchronous**,
+with the passive wall-clock floor as its backstop. Reference only — thresholds and
+field shapes belong to the doctrine and `superpowers:phase-handoff`.
+
+**Background vs synchronous.** Promoted units run in the background and are actively
+monitored for liveness; the rest run synchronously and rely on the passive floor,
+which is checked at the next task boundary and on resume.
+
+**Batch-level Workflow mitigation.** A *dead* inner agent inside a `parallel()` /
+`pipeline()` Workflow already surfaces as `null` to the aggregator (handled). A
+*stuck* inner agent would otherwise wedge the batch invisibly, since Workflow owns
+the fan-out and the orchestrator holds no per-agent record. So before invoking a
+`parallel()` / `pipeline()` Workflow, the orchestrator stamps **one `inflight` entry
+for the Workflow call itself** (`kind: "bg-agent"`, with `deadline_s` = the **sum**
+of the inner per-agent budgets for a serial `pipeline()`, or the **max** for a
+concurrent `parallel()`). The wall-clock floor then catches a wedged batch **as a
+unit**.
+
+**Residual limitation (narrowed).** This detects *that* a batch is stuck but not
+*which* inner agent hung; restart is at batch granularity. Where per-agent recovery
+matters, prefer manual `Task` dispatch (per-agent `inflight`, fully covered by the
+doctrine) over a Workflow.
+
 ## The Pattern
 
 ### 1. Identify Independent Domains
