@@ -28,6 +28,8 @@ If tests fail, report failures and stop.
 
 Read durable evidence before running any review. If `docs/superpowers/runs/<run>/state.json` exists, load it — its schema (incl. `code_review_verdict`, `security_review_status`, `plan_risk_tier`) is defined once in `superpowers:phase-handoff`; do not redefine it here. The cached verdicts drive Step 2's skip/re-run decision.
 
+After loading `state.json`, check `inflight` (abandoned-unit detector). At finishing time this is normally empty — if `inflight == []`, proceed silently. If `inflight` is **non-empty**, a unit may have been abandoned mid-run (dispatched but never reconciled — see `../../docs/liveness-doctrine.md`): emit a **non-blocking WARNING**, surface it in the Step 5 menu preamble / one-line verdict, and **PROCEED**. This is a WARNING, not a STOP — it does **not** block the PR and does **not** change the auto-PR default.
+
 ## Step 2: Code Review Gate
 
 Tests passing is necessary, not sufficient. Before presenting completion options, run automated review on the branch diff.

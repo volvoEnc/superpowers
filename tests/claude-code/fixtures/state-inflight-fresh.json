@@ -1,0 +1,43 @@
+{
+  "run_id": "2026-06-24-liveness-doctrine",
+  "current_phase": "execution",
+  "next_phase": "execution",
+  "spec": "docs/superpowers/specs/2026-06-24-background-agent-liveness-doctrine-design.md",
+  "plan": "docs/superpowers/plans/2026-06-24-background-agent-liveness-doctrine/overview.md",
+  "current_task": "task-003-name.md",
+  "completed_tasks": ["task-001-name.md", "task-002-name.md"],
+  "blocked_tasks": [],
+  "last_green_commit": "abc1234",
+  "inflight": [
+    {
+      "task": "task-003-name.md",
+      "kind": "bg-bash",
+      "promoted": true,
+      "deadline_s": 600,
+      "dispatched_at": "2026-06-24T10:00:00Z",
+      "last_progress_at": "2026-06-24T10:00:00Z",
+      "output_path": "docs/superpowers/runs/2026-06-24-liveness-doctrine/bg-task-003.log",
+      "restarts": 0
+    },
+    {
+      "task": "task-004-name.md",
+      "kind": "sync",
+      "promoted": false,
+      "deadline_s": 120,
+      "dispatched_at": "2026-06-24T10:05:00Z",
+      "last_progress_at": "2026-06-24T10:05:00Z",
+      "output_path": null,
+      "restarts": 0
+    },
+    {
+      "task": "task-005-name.md",
+      "kind": "bg-agent",
+      "promoted": true,
+      "deadline_s": 600,
+      "dispatched_at": "2026-06-24T10:10:00Z",
+      "last_progress_at": "2026-06-24T10:10:00Z",
+      "output_path": null,
+      "restarts": 0
+    }
+  ]
+}

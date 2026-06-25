@@ -55,6 +55,8 @@ Execution state lives on disk so the orchestrator stays light and can resume aft
 
 After **each task** completes (or blocks), update `state.json` in the run directory (`docs/superpowers/runs/<run>/state.json`). Write the fields `current_task`, `completed_tasks`, `blocked_tasks`, and `last_green_commit`. The full schema — including these fields and their shapes — is single-sourced in `superpowers:phase-handoff` (`## State JSON`); reference it there, do not redefine field shapes here.
 
+When a unit is dispatched, also track its liveness in `state.json` via the `inflight[]` entry (`deadline_s`, `promoted`, `dispatched_at`, `last_progress_at`, `restarts`) — field shapes are single-sourced in `superpowers:phase-handoff` (`## State JSON`); do not redefine them here. See `../../docs/liveness-doctrine.md` for when/how to promote and monitor a dispatched unit.
+
 Each task also gets a durable **per-task receipt** at `docs/superpowers/runs/<run>/task-NNN-result.md` (NNN = zero-padded task number). The receipt captures the implementer status, what was built, test results, files changed, review verdicts, and any deferred findings. This file is the artifact — it survives compaction.
 
 **After a compaction, resume from these files, not from chat:** read `state.json` for `current_task`/`completed_tasks`/`blocked_tasks`/`last_green_commit`, and read the `task-NNN-result.md` receipts for what each completed task produced. Reconstruct the plan position from disk before dispatching the next subagent.
@@ -103,6 +105,8 @@ See `../../docs/review-integration-doctrine.md` for the full automation-vs-judgm
 - **implementation-wrong** (task is correct, the build diverged) → re-dispatch a fresh subagent with a narrowed **fix scope** (counts against the 2-attempt limit).
 - **plan-wrong** (the task itself is wrong, ambiguous, or unbuildable) → **stop the run and escalate immediately**. Halt the per-task loop, report the escalation outcome (`human-decision-required`) in `state.json` and the task receipt, and do **not** process any further tasks until the human responds. Do not auto-retry — retrying would mask a wrong plan, and continuing to later tasks would build on a broken plan.
 
+**Time/liveness trigger (subagent hung or died).** A subagent that **fails to return in time** — over budget with no progress, per the wall-clock floor / detection signals in the doctrine — is a different failure class from a content-triggered BLOCKED. Response: restart-fresh with carryover (prior partial + remaining scope + a note that the prior attempt hung/died) and increment `restarts`, up to `max_restarts` — the **liveness pool**, kept SEPARATE from max-2-fix-attempts. The pathological-repeat guard escalates early if the unit dies at the same point repeatedly, but only when a positional signal exists. **Carryover safety (compact + sanitize):** before the salvaged partial seeds the fresh agent it is compacted to a receipt AND **sanitized** — strip secrets/credentials/tokens and raw output dumps; if the partial is corrupt/unparseable, note that and carry only the validated remaining-scope rather than re-feeding corrupt content. The two pools are **independent** (separate counters) but compose under the combined per-task ceiling `max_dispatches_total` = `max_restarts + max_fix_attempts`: escalate when either pool exhausts OR the sum of fresh dispatches crosses the ceiling. Last-resort outcome is the existing `human-decision-required`; `plan-wrong` still stops the run immediately. Defer mechanics/constants to `../../docs/liveness-doctrine.md`.
+
 **Categorize findings Blocking vs Deferred.** Blocking findings must be resolved (or the task escalated) before marking complete. Deferred findings are recorded in the task receipt and carried forward, not silently dropped.
 
 ## Red Flags
@@ -118,6 +122,7 @@ Never:
 - Write a per-task built-in `/code-review` result as the cacheable branch-scope `code_review_verdict` in `state.json`
 - Carry a subagent's raw working context or transcript forward instead of its compact result
 - Reuse a prior subagent's result as memory in place of dispatching a fresh subagent with the exact follow-up scope
+- Let a hung/non-returning subagent block the loop forever instead of applying the time/liveness trigger (restart-fresh up to `max_restarts`, then escalate `human-decision-required`) — and never conflate the liveness pool with the content max-2-fix-attempts pool
 
 ## Integration
 

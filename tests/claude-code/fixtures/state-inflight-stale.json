@@ -1,0 +1,16 @@
+{
+  "run_id": "2026-06-24-liveness-doctrine",
+  "current_phase": "execution",
+  "inflight": [
+    {
+      "task": "task-003-name.md",
+      "kind": "bg-agent",
+      "promoted": true,
+      "deadline_s": 120,
+      "dispatched_at": "2020-01-01T00:00:00Z",
+      "last_progress_at": "2020-01-01T00:00:00Z",
+      "output_path": null,
+      "restarts": 0
+    }
+  ]
+}
