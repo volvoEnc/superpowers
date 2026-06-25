@@ -132,6 +132,38 @@ In `security_review_status`, `required` is a boolean: `true` when the change is 
 
 Each evidence field records the `commit` and `timestamp` of the run that produced it. A cached verdict (`test_results`, `code_review_verdict`, `security_review_status`) is valid only when its `commit == current HEAD` SHA. Any new commit invalidates every cached verdict. Downstream skills such as `superpowers:finishing-a-development-branch` re-run the corresponding check whenever the SHA differs, the verdict is not clean, or the field is missing. This schema is defined here once; other skills reference these field names and must not redefine them.
 
+### Liveness fields (in-flight tracking)
+
+Optional liveness fields track units that have been dispatched but not yet reconciled. They sit alongside the fields above (same conventions: ISO-8601 timestamps, enum strings not prose). This section defines the **shapes** only; the liveness **behavior** that consumes them lives in `../../docs/liveness-doctrine.md`.
+
+```jsonc
+{
+  // ... all existing fields unchanged ...
+
+  // units currently dispatched and not yet reconciled
+  "inflight": [
+    {
+      "task": "task-003-name.md",          // which task this dispatch is for
+      "kind": "bg-bash",                    // "sync" | "bg-agent" | "bg-bash"
+      "promoted": true,                     // true when the unit went background+monitored
+      "deadline_s": 600,                    // budgeted wall-clock for THIS task (tunable)
+      "dispatched_at": "2026-06-24T10:00:00Z",
+      "last_progress_at": "2026-06-24T10:00:00Z", // initialized to dispatched_at; updated on any progress signal
+      "output_path": "docs/superpowers/runs/<run>/bg-task-003.log", // bg-bash/bg-agent only; null for sync
+      "restarts": 0                         // liveness restart count (tunable bound),
+                                            //   separate from the content max-2-fix-attempts pool
+    }
+  ]
+}
+```
+
+- **`inflight`** is an **array** (a batch may dispatch several units). An entry is **removed** when the unit completes and its receipt is written, so a non-empty `inflight` on resume == "something was in flight." Unlike the SHA-gated evidence caches (`test_results` / `code_review_verdict` / `security_review_status`), `inflight` is **NOT** a SHA-gated cache: its lifecycle is "removed on completion + receipt write," not "invalidated on new commit."
+- **`deadline_s`** is **per-task**, assigned by risk tier at dispatch. Default ladder (all **tunable**, the orchestrator may override per task): Tier-3 `120`, Tier-2 `300`, Tier-1 `600`.
+- **`promoted`** records whether the unit went background+monitored (vs. a plain synchronous dispatch).
+- **`restarts`** is the **liveness** pool — explicitly **separate** from the content-triggered max-2-fix-attempts pool, which stays where it is.
+- **`last_progress_at`** is **initialized to `dispatched_at`** at dispatch for **every** unit and is updated on any progress signal. For a `sync`/non-promoted unit and for a signal-less bg-agent (no cheap progress signal) it simply tracks `dispatched_at`, so the floor governs on `now - dispatched_at` until a real progress signal arrives.
+- **Compaction survival:** a resumed orchestrator reads `state.json`, sees a non-empty `inflight`, and for each entry computes `now - dispatched_at` / `now - last_progress_at`; if that exceeds `G × deadline_s` (grace multiplier `G`, **tunable**) it concludes "in flight too long → check/restart." This is why `inflight` lives in `state.json` and not in chat.
+
 Keep this file boring. Boring state survives compaction.
 
 ## Context Hygiene Rules
