@@ -60,8 +60,8 @@ if (constraints) {
       ...authInputLines,
       `Inspect the repository rooted at: ${repoRoot} — read-only for repository code (you may run git diff; do NOT commit or modify any repo source/config/test file).`,
       'Identify: relevant files and responsibilities, existing patterns, test commands, constraints, risks, and open questions.',
-      `Writing the context pack is your REQUIRED output and is explicitly allowed (it is not "modifying the repo"). Write it to: ${contextPackPath}; follow the Context Pack template defined in the writing-plans skill at: ${templatesPath} (read it for the exact required shape — do not guess). You MUST create this file before returning.`,
-      'Return { wrote: true ONLY IF you actually created the context pack file at the path above; summary: one line }. If you could not create it (e.g. directory missing, write denied), return wrote: false with the reason in summary.',
+      `Writing the context pack is your REQUIRED output and is explicitly allowed (it is not "modifying the repo"). Write it to: ${contextPackPath}; follow the Context Pack template defined in the writing-plans skill at: ${templatesPath} (read it for the exact required shape — do not guess). The plan directory ${planDir} may not exist yet (a fresh plan target is normal) — creating it (e.g. mkdir -p) as part of writing the context pack is explicitly allowed and REQUIRED. A missing plan directory is NOT a failure: create it. You MUST create the context pack file before returning.`,
+      'Return { wrote: true ONLY IF you actually created the context pack file at the path above; summary: one line }. Return wrote: false ONLY for a genuine write failure (e.g. permission denied) — NOT merely because the plan directory did not exist (you are required to create it).',
     ].join('\n'),
     { label: 'context-scout', phase: 'Scout', schema: SCOUT_SCHEMA },
   );
