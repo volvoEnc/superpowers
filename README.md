@@ -1,241 +1,125 @@
-# Superpowers
-
-Superpowers is a complete software development methodology for your coding agents, built on top of a set of composable skills and some initial instructions that make sure your agent uses them.
-
-## Quickstart
-
-Give your agent Superpowers: [Claude Code](#claude-code), [Codex CLI](#codex-cli), [Codex App](#codex-app), [Factory Droid](#factory-droid), [Gemini CLI](#gemini-cli), [OpenCode](#opencode), [Cursor](#cursor), [GitHub Copilot CLI](#github-copilot-cli).
-
-## How it works
-
-It starts from the moment you fire up your coding agent. As soon as it sees that you're building something, it *doesn't* just jump into trying to write code. Instead, it steps back and asks you what you're really trying to do. 
-
-Once it's teased a spec out of the conversation, it shows it to you in chunks short enough to actually read and digest. 
-
-After you've signed off on the design, your agent puts together an implementation plan from the approved spec and a curated context pack. For larger work, the plan is split into an overview, per-task files, status state, and review receipts so fresh agents do not need the whole conversation to execute safely. It emphasizes true red/green TDD, YAGNI (You Aren't Gonna Need It), and DRY. 
-
-Before execution, the plan gets reviewed against the spec and current repository state. That catches missing requirements, stale file paths, invalid snippets, and risky task ordering while the fixes are still cheap.
-
-Next up, once you say "go", it launches a *subagent-driven-development* process, having agents work through each engineering task, inspecting and reviewing their work, and continuing forward. It's not uncommon for Claude to be able to work autonomously for a couple hours at a time without deviating from the plan you put together.
-
-There's a bunch more to it, but that's the core of the system. And because the skills trigger automatically, you don't need to do anything special. Your coding agent just has Superpowers.
-
-
-## Sponsorship
-
-If Superpowers has helped you do stuff that makes money and you are so inclined, I'd greatly appreciate it if you'd consider [sponsoring my opensource work](https://github.com/sponsors/obra).
-
-Thanks! 
-
-- Jesse
-
-
-## Installation
-
-Installation differs by harness. If you use more than one, install Superpowers separately for each one.
-
-### Claude Code
-
-Superpowers is available via the [official Claude plugin marketplace](https://claude.com/plugins/superpowers)
-
-#### Official Marketplace
-
-- Install the plugin from Anthropic's official marketplace:
-
-  ```bash
-  /plugin install superpowers@claude-plugins-official
-  ```
-
-#### Superpowers Marketplace
-
-The Superpowers marketplace provides Superpowers and some other related plugins for Claude Code.
-
-- Register the marketplace:
-
-  ```bash
-  /plugin marketplace add obra/superpowers-marketplace
-  ```
-
-- Install the plugin from this marketplace:
-
-  ```bash
-  /plugin install superpowers@superpowers-marketplace
-  ```
-
-### Codex CLI
-
-Superpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).
-
-- Open the plugin search interface:
-
-  ```bash
-  /plugins
-  ```
-
-- Search for Superpowers:
-
-  ```bash
-  superpowers
-  ```
-
-- Select `Install Plugin`.
-
-### Codex App
-
-Superpowers is available via the [official Codex plugin marketplace](https://github.com/openai/plugins).
-
-- In the Codex app, click on Plugins in the sidebar.
-- You should see `Superpowers` in the Coding section.
-- Click the `+` next to Superpowers and follow the prompts.
-
-### Factory Droid
-
-- Register the marketplace:
-
-  ```bash
-  droid plugin marketplace add https://github.com/obra/superpowers
-  ```
-
-- Install the plugin:
-
-  ```bash
-  droid plugin install superpowers@superpowers
-  ```
-
-### Gemini CLI
-
-- Install the extension:
-
-  ```bash
-  gemini extensions install https://github.com/obra/superpowers
-  ```
-
-- Update later:
-
-  ```bash
-  gemini extensions update superpowers
-  ```
-
-### OpenCode
-
-OpenCode uses its own plugin install; install Superpowers separately even if you
-already use it in another harness.
-
-- Tell OpenCode:
-
-  ```
-  Fetch and follow instructions from https://raw.githubusercontent.com/obra/superpowers/refs/heads/main/.opencode/INSTALL.md
-  ```
-
-- Detailed docs: [docs/README.opencode.md](docs/README.opencode.md)
-
-### Cursor
-
-- In Cursor Agent chat, install from marketplace:
-
-  ```text
-  /add-plugin superpowers
-  ```
-
-- Or search for "superpowers" in the plugin marketplace.
-
-### GitHub Copilot CLI
-
-- Register the marketplace:
-
-  ```bash
-  copilot plugin marketplace add obra/superpowers-marketplace
-  ```
-
-- Install the plugin:
-
-  ```bash
-  copilot plugin install superpowers@superpowers-marketplace
-  ```
-
-## The Basic Workflow
-
-1. **brainstorming** - Activates before writing code. Refines rough ideas through questions, explores alternatives, presents design in sections for validation. Saves design document.
-
-2. **using-git-worktrees** - Activates after design approval. Creates isolated workspace on new branch, runs project setup, verifies clean test baseline.
-
-3. **phase-handoff** - Activates when moving from design to planning or when context is large. Writes a compact handoff so the next phase uses saved decisions instead of chat sediment.
-
-4. **writing-plans** - Activates with approved design. Builds a context pack, then writes a plan overview plus per-task files for non-trivial work. Every task has exact file paths, verification steps, risk tier, and review policy.
-
-5. **reviewing-plans** - Activates before execution. Reviews the plan against the approved spec and current repository state, catching missing coverage, stale symbols, invalid snippets, risky ordering, and weak tests.
-
-6. **subagent-driven-development** or **executing-plans** - Activates with a reviewed plan. Dispatches fresh subagent per task with two-stage review (spec compliance, then code quality), or executes in batches with human checkpoints.
-
-7. **test-driven-development** - Activates during implementation. Enforces RED-GREEN-REFACTOR: write failing test, watch it fail, write minimal code, watch it pass, commit. Deletes code written before tests.
-
-8. **requesting-code-review** - Activates between tasks. Reviews against plan, reports issues by severity. Critical issues block progress.
-
-9. **finishing-a-development-branch** - Activates when tasks complete. Verifies tests, presents options (merge/PR/keep/discard), cleans up worktree.
-
-**The agent checks for relevant skills before any task.** Mandatory workflows, not suggestions.
-
-## What's Inside
-
-### Skills Library
-
-**Testing**
-- **test-driven-development** - RED-GREEN-REFACTOR cycle (includes testing anti-patterns reference)
-
-**Debugging**
-- **systematic-debugging** - 4-phase root cause process (includes root-cause-tracing, defense-in-depth, condition-based-waiting techniques)
-- **verification-before-completion** - Ensure it's actually fixed
-
-**Collaboration** 
-- **brainstorming** - Socratic design refinement
-- **phase-handoff** - Compact workflow state between spec, plan, review, execution, and resume phases
-- **writing-plans** - Detailed implementation plans with context packs and per-task files
-- **reviewing-plans** - Pre-execution plan review against spec, repository state, testability, and risk
-- **executing-plans** - Batch execution with checkpoints
-- **dispatching-parallel-agents** - Concurrent subagent workflows
-- **requesting-code-review** - Pre-review checklist
-- **receiving-code-review** - Responding to feedback
-- **using-git-worktrees** - Parallel development branches
-- **finishing-a-development-branch** - Merge/PR decision workflow
-- **subagent-driven-development** - Fast iteration with two-stage review (spec compliance, then code quality)
-
-**Meta**
-- **writing-skills** - Create new skills following best practices (includes testing methodology)
-- **using-superpowers** - Introduction to the skills system
-
-## Philosophy
-
-- **Test-Driven Development** - Write tests first, always
-- **Systematic over ad-hoc** - Process over guessing
-- **Complexity reduction** - Simplicity as primary goal
-- **Evidence over claims** - Verify before declaring success
-
-Read [the original release announcement](https://blog.fsck.com/2025/10/09/superpowers/).
-
-## Contributing
-
-The general contribution process for Superpowers is below. Keep in mind that we don't generally accept contributions of new skills and that any updates to skills must work across all of the coding agents we support.
-
-1. Fork the repository
-2. Switch to the 'dev' branch
-3. Create a branch for your work
-4. Follow the `writing-skills` skill for creating and testing new and modified skills
-5. Submit a PR, being sure to fill in the pull request template.
-
-See `skills/writing-skills/SKILL.md` for the complete guide.
-
-## Updating
-
-Superpowers updates are somewhat coding-agent dependent, but are often automatic.
-
-## License
-
-MIT License - see LICENSE file for details
-
-## Community
-
-Superpowers is built by [Jesse Vincent](https://blog.fsck.com) and the rest of the folks at [Prime Radiant](https://primeradiant.com).
-
-- **Discord**: [Join us](https://discord.gg/35wsABTejz) for community support, questions, and sharing what you're building with Superpowers
-- **Issues**: https://github.com/obra/superpowers/issues
-- **Release announcements**: [Sign up](https://primeradiant.com/superpowers/) to get notified about new versions
+# Superpowers (форк volvoEnc)
+
+Superpowers — это методология разработки для кодинг-агентов: набор композируемых
+скиллов плюс bootstrap, который заставляет агента их применять. Когда ты говоришь
+«давай сделаем X», агент **не бросается писать код** — он идёт по дисциплинированному
+конвейеру **spec → plan → review → build → PR**.
+
+Это **форк** оригинального [obra/superpowers](https://github.com/obra/superpowers)
+(автор — [Jesse Vincent](https://blog.fsck.com) и команда Prime Radiant) с правками
+под Claude-вариант (`plugins/superpowers-claude`).
+
+---
+
+## 1. Зачем это нужно
+
+Главная идея — **чистый контекст и ранняя ловля ошибок**:
+
+- **Чистый контекст.** Каждый шаг делает *свежий* субагент и возвращает только
+  компактный результат-receipt. Оркестратор не тонет в сыром выводе, а состояние
+  живёт на диске (`state.json`), поэтому работа переживает компакцию.
+- **Ранняя ловля ошибок.** План ревьюится **до** кода; каждая задача проходит
+  spec/quality-ревью; зависший или неверный шаг ловится прежде, чем на нём построят
+  следующий.
+
+Скилы триггерятся автоматически (bootstrap `using-superpowers`) — отдельных действий
+от пользователя не требуется. Фиксируешь спеку (единственный человеческий гейт), а
+дальше агент может работать автономно вплоть до открытия PR.
+
+## 2. Как это работает — этапы конвейера
+
+| # | Скилл / инструмент | Когда вызывается | Зачем нужен | Вход → выход |
+|---|--------------------|------------------|-------------|--------------|
+| 0 | **using-superpowers** (bootstrap) | старт сессии, всегда | учит агента, как и когда триггерить скилы | — → правила |
+| 1 | **brainstorming** | любое продуктовое/кодовое изменение («давай сделаем X») | превратить размытый запрос в **утверждённую спеку** (единственный человеческий гейт); скаутит контекст субагентами, сначала защищает ветку | запрос → `docs/superpowers/specs/<date>-…-design.md` |
+| 2 | **using-git-branches** | старт brainstorming / планирования / реализации | увести работу с `main`/`master`/`dev` на feature-ветку. Режимы: `design-start` (только ветка), `implementation-start` (+ baseline-тесты) | текущий checkout → защищённая ветка |
+| 3 | **writing-plans** | есть утверждённая спека | спека → исполнимый план (`overview.md` + per-task файлы + `status.json`). Дефолт — Workflow-скрипт `write-plan.workflow.js` (**Scout → Author → Review**), затем coordinator patch loop | спека → `docs/superpowers/plans/<feature>/` |
+| 4 | **reviewing-plans** | перед исполнением плана | adversarial-валидация. Workflow `review-plan.workflow.js`: параллельные ревьюеры по измерениям (spec-coverage / plan-correctness / snippet / risk / security) → верификация каждой находки → вердикт | план → `review-findings.md` + verdict |
+| 5 | **phase-handoff** | сквозной (владелец схемы) | единственный источник схемы `state.json` (что переживает компакцию); все остальные скилы **ссылаются**, не переопределяют формы полей | — → схема состояния |
+| 6 | **subagent-driven-development** | «go» после одобрения плана (дефолтный путь исполнения) | исполнять план свежим субагентом на задачу: implement → spec-review → quality-review → built-in mechanical review → commit; состояние в `state.json` + per-task receipts | план → коммиты + receipts |
+| 6′ | **executing-plans** | явный opt-in вместо 6 | то же исполнение, но **inline** в текущей сессии с чекпойнтами | план → коммиты |
+| 7 | **finishing-a-development-branch** | реализация готова, тесты зелёные | verify tests → `/code-review` gate → (`/security-review`, если Tier-1) → push + PR (или merge / keep / discard) | ветка → PR |
+
+### Поддерживающие скилы (по ситуации)
+
+| Скилл | Когда | Зачем |
+|-------|-------|-------|
+| **verification-before-completion** | перед любым заявлением «готово / работает» | риск-тиры (Tier-1/2/3) + правило «доказательства до утверждений» |
+| **test-driven-development** | внутри задачи-реализации | RED → GREEN → refactor |
+| **systematic-debugging** | любой баг / неожиданное поведение | root cause до фикса (4 фазы), без угадывания |
+| **dispatching-parallel-agents** | 2+ независимых задач | веер субагентов / Workflow, без общего состояния |
+| **requesting- / receiving-code-review** | запрос и приём ревью | дисциплина: верифицировать перед внедрением, без формального поддакивания |
+| **writing-skills** | создание / правка скилла | разработка + eval-доказательства (поведение скилла = код) |
+
+### Движок Workflow (инструмент)
+
+`*.workflow.js` (например `write-plan` / `review-plan`) запускаются Workflow-инструментом,
+который **детерминированно** разворачивает субагентов (`agent()` / `parallel()` /
+`pipeline()`), хранит их результаты структурно и переживает паузы через replay. Он
+используется внутри `writing-plans` / `reviewing-plans`. Ручной `Task`-dispatch —
+альтернатива, когда нужен пошаговый контроль или когда Workflow упирается в баг
+с `args` (см. раздел «Текущие проблемы»).
+
+### Схема потока
+
+```
+brainstorming ──► (using-git-branches) ──► writing-plans ──► reviewing-plans
+   спека (гейт)        feature-ветка        план-директория      verdict
+        │                                                            │
+        └──────────────────────── одобрено ──────────────────────────┘
+                                       │
+                       subagent-driven-development  (или executing-plans)
+                         implement → spec → quality → mechanical → commit
+                                       │
+                          finishing-a-development-branch ──► PR
+        (сквозь весь поток: phase-handoff = state.json, verification-before-completion = tiers)
+```
+
+Сопутствующие доктрины форка:
+[`review-integration-doctrine.md`](plugins/superpowers-claude/docs/review-integration-doctrine.md)
+(автоматическое vs ручное ревью) и
+[`liveness-doctrine.md`](plugins/superpowers-claude/docs/liveness-doctrine.md)
+(обнаружение зависших фоновых субагентов).
+
+## 3. Текущие проблемы
+
+| Проблема | Симптом | Обход / статус |
+|----------|---------|----------------|
+| **Workflow теряет `args` за границей replay** | фоновый Workflow-скрипт после первого `await` видит `args.* === undefined`; ломает последовательные await-стадии (Author в `write-plan`; verify/persist в `review-plan`) | обход: зашить пути литералами **или** ручной `Task`-dispatch. Нужен фикс: строить все промпты до первого `await` либо re-supply `args` на replay |
+| **Раннер тестов не работает на macOS** | `tests/claude-code/run-skill-tests.sh` оборачивает тесты в `timeout`, которого на macOS нет по умолчанию → любой тест = FAIL через раннер | запускать тест напрямую (`bash …/test-*.sh`) или поставить `coreutils` (`gtimeout`) |
+| **Кэш плагина vs правки в репо** | живая сессия грузит скилы из `~/.claude/plugins/cache/…`, поэтому правка файла в репо **не меняет** живое поведение до переустановки/синка | live-eval требует reinstall; пока — text-fed A/B (скормить субагенту старый/новый текст скилла) |
+| **Артефакты gitignored** | `docs/superpowers/{specs,plans,runs}` в `.gitignore` → `git add` молча игнорит; отслеживаемый тест не должен зависеть от фикстур оттуда | тестовые фикстуры класть в `tests/claude-code/fixtures/` (tracked); процессные артефакты — on-disk, без коммита |
+| **Ревью может противоречить себе** | adversarial-ревью способно выдать одновременно «добавь X» и «X вне scope» | развилки, задевающие утверждённую спеку, эскалировать человеку, а не решать молча |
+| **Тяжёлая eval-планка** | поведенческие правки скиллов требуют multi-session live A/B (золотой стандарт), дорогой/неудобный из-за кэша | сейчас — контролируемый text-fed A/B + рекомендация live-прогона перед опорой на правку |
+
+## 4. Roadmap
+
+- **[высокий] Resume-safe Workflow** — починить потерю `args` (строить все промпты до
+  первого `await`, либо рантайм re-supply `args` на replay), чтобы `write-plan` /
+  `review-plan` работали без обходов.
+- **[высокий] Портируемый раннер тестов** — fallback на `gtimeout` / детект отсутствия
+  `timeout`, чтобы skill-тесты шли на macOS из коробки.
+- **[средний] Live-eval тулинг** — шаг reinstall/sync или eval-харнесс, грузящий
+  правленый текст скилла, чтобы поведенческие правки проходили натуральный
+  multi-session A/B, а не text-fed.
+- **[средний] Конфликт-резолюшн в review→patch loop** — явное правило: при
+  противоречивых находках, задевающих спеку, — стоп + эскалация.
+- **[низкий] Доки по артефактам** — зафиксировать соглашение tracked-фикстуры vs
+  on-disk-эвиденс, чтобы новые планы не наступали на `.gitignore`.
+
+## Установка
+
+Это личный форк, поэтому ставится через локальный marketplace `superpowers-personal`
+(Claude-вариант `plugins/superpowers-claude`), а не через официальный marketplace
+upstream. Общий механизм установки Superpowers для разных харнессов (Claude Code,
+Codex, Gemini CLI, Cursor, Copilot CLI и др.) описан в
+[оригинальном проекте](https://github.com/obra/superpowers).
+
+## Лицензия и благодарности
+
+MIT — см. файл [`LICENSE`](LICENSE).
+
+Оригинальный Superpowers создан [Jesse Vincent](https://blog.fsck.com) и командой
+[Prime Radiant](https://primeradiant.com) — см. апстрим
+[obra/superpowers](https://github.com/obra/superpowers). Этот репозиторий — форк с
+правками под собственный воркфлоу; апстрим-специфичные изменения сюда не отправляются.
