@@ -36,8 +36,15 @@ if grep -qE "superpowers:(TaskGet|TaskStop|Monitor|ScheduleWakeup)" plugins/supe
 #    Revert it to its pre-feature version and re-run:
 #      git checkout "$(git merge-base main HEAD)" -- plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
 #    then confirm the diff is empty. No task in this plan may modify this file.
-if git diff --quiet "$(git merge-base main HEAD)" -- plugins/superpowers-claude/skills/verification-before-completion/SKILL.md; then
-  echo "  [PASS] verification-before-completion unchanged"; else echo "  [FAIL] verification-before-completion was modified"; fail=1; fi
+vbc=plugins/superpowers-claude/skills/verification-before-completion/SKILL.md
+base="$(git merge-base main HEAD 2>/dev/null || git merge-base origin/main HEAD 2>/dev/null || true)"
+if [ -z "$base" ]; then
+  echo "  [SKIP] verification-before-completion diff guard — no local main/origin/main ref to diff against (shallow/CI clone); absence of a base is not evidence of modification"
+elif git diff --quiet "$base" -- "$vbc"; then
+  echo "  [PASS] verification-before-completion unchanged"
+else
+  echo "  [FAIL] verification-before-completion was modified"; fail=1
+fi
 
 # 6. The four editing skills reference the doctrine doc (additive, not duplicate).
 for f in dispatching-parallel-agents subagent-driven-development executing-plans finishing-a-development-branch; do
@@ -50,7 +57,7 @@ if grep -q "max 2 fix-attempts" plugins/superpowers-claude/skills/subagent-drive
   echo "  [PASS] existing max-2-fix-attempts limit preserved"; else echo "  [FAIL] content-triggered limit removed"; fail=1; fi
 
 # 8. Acceptance criterion 2 (wall-clock floor on resume) — the stale fixture is over G×deadline_s.
-python3 - "$REPO_ROOT/tests/claude-code/fixtures/state-inflight-stale.json" <<'PY'
+if ! python3 - "$REPO_ROOT/tests/claude-code/fixtures/state-inflight-stale.json" <<'PY'
 import json,sys
 from datetime import datetime, timezone
 d=json.load(open(sys.argv[1]))
@@ -61,10 +68,11 @@ elapsed=(datetime.now(timezone.utc)-dispatched).total_seconds()
 assert elapsed > G*e["deadline_s"], f"fixture not stale: {elapsed} <= {G*e['deadline_s']}"
 print("  [PASS] stale fixture exceeds G*deadline_s (resume floor would fire)")
 PY
+then echo "  [FAIL] stale-fixture floor check (criterion §11.2)"; fail=1; fi
 
 # 9. Acceptance criterion 3 (promotion rule) + output_path constraint — checked over ALL fresh entries
 #    (positive + negative + signal-less) as STRUCTURAL invariants, not the tunable constant values.
-python3 - "$REPO_ROOT/tests/claude-code/fixtures/state-inflight-fresh.json" <<'PY'
+if ! python3 - "$REPO_ROOT/tests/claude-code/fixtures/state-inflight-fresh.json" <<'PY'
 import json,sys
 T_PROMOTE=300  # promotion threshold default (tunable) — used only to check the PR-2 structural invariant
 d=json.load(open(sys.argv[1]))
@@ -90,6 +98,7 @@ for e in entries:
 assert saw_promoted and saw_sync, "fixture must cover both the promoted and the sync (negative) cases"
 print("  [PASS] promotion + output_path structural invariants hold across all entries")
 PY
+then echo "  [FAIL] promotion/output_path structural check (criterion §11.3)"; fail=1; fi
 
 if [ "$fail" -ne 0 ]; then echo "=== FAILURES ==="; exit 1; fi
 echo "=== All liveness-doctrine consistency checks passed ==="
