@@ -7,7 +7,42 @@ description: Use when an implementation plan exists and needs pre-execution revi
 
 ## Core Rule
 
-The main agent is the review coordinator, not the reviewer. When subagents are available, dispatch fresh read-only reviewers (Task tool) with sterile inputs. The main agent only routes artifacts, merges receipts, and applies concrete plan edits.
+The main agent is the review coordinator, not the reviewer. It routes artifacts, merges receipts, and applies concrete plan edits — it never reviews inline in place of a reviewer. The default coordination path is the shipped Workflow; manual subagent dispatch is the documented fallback.
+
+## Default: Workflow
+
+When you are the **main agent** reviewing a **non-trivial plan**, run the shipped review Workflow instead of hand-dispatching reviewers. The Workflow encodes the same review dimensions (spec-coverage, plan-correctness, snippet, risk, security) as a parallel fan-out plus an adversarial-verify pass, and returns a structured verdict.
+
+The absolute path to the bundled review script is resolved at skill-load time (via the `${CLAUDE_SKILL_DIR}` substitution) and printed here:
+
+```!
+echo "scriptPath=${CLAUDE_SKILL_DIR}/review-plan.workflow.js"
+```
+
+Use exactly the `scriptPath` printed above — it is the deterministic absolute path to the script bundled with this skill, not a guess:
+
+```text
+Workflow({
+  scriptPath: "<the scriptPath printed above>",
+  args: { planDir, specPath, contextPackPath, repoRoot, mode }
+})
+```
+
+If no `scriptPath=…` line was printed above (skill shell injection disabled by policy, e.g. `disableSkillShellExecution`), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human.
+
+- `mode` is one of `light | targeted | full` (see Review Modes); it selects which reviewer dimensions run and how deep, not how many rounds.
+- The script runs **one** find→verify pass: parallel reviewers produce findings, then each finding is adversarially verified and REFUTED findings are dropped. It does not loop and it does not patch the plan.
+
+Consume its structured verdict:
+
+```text
+{ verdict, blocking, important, minor }
+// verdict: approved | issues-found | blocked
+```
+
+The coordinator then applies concrete plan edits for `blocking`/`important` findings, observing the cycle limit (max 1 re-review round — see Re-review Rules). Re-review = run the same Workflow again in a mode **no narrower than the dimensions that raised the fixed findings**: the **same mode as the original review**, and `full` if a resolved blocker was in `risk` or `security`. Do **not** downgrade to `targeted` — a narrower set would skip the very dimension (e.g. `risk`/`security`) that raised the blocker, so the fix could not be verified. The Workflow never edits the plan; patching stays with the coordinator.
+
+Use the **Fallback (manual subagent dispatch)** path instead when the Workflow tool is unavailable — most commonly because you are running from inside a subagent (the Workflow tool can only be called by the main agent; nesting throws), or for a trivial plan where a full fan-out is overkill.
 
 ## Inputs
 
@@ -31,18 +66,37 @@ Do not provide chat history, rejected brainstorming notes, old draft plans, or s
 
 Escalate to full review for public API, migrations, security, data loss, concurrency, cross-cutting refactors, or non-trivial code snippets.
 
-## Subagent Roles
+## Review Criteria (dimensions)
 
-Dispatch only the roles needed for the selected mode:
+The same dimensions are checked on either path — the Workflow encodes them in its parallel reviewers; the manual fallback dispatches one read-only subagent per dimension:
+
+1. **spec-coverage** - every spec requirement maps to at least one task and verification step; no unrequested scope.
+2. **plan-correctness** - file paths, task order, commands, dependencies, and stale references are real and runnable; new files are created before use; no placeholders or hand-waves remain.
+3. **snippet** - imports, symbols, tests, function names, and code snippets check out against the repo.
+4. **risk** - migrations, security, data loss, concurrency, public APIs, rollback, and observability are handled.
+5. **security** - security-sensitive changes have compatibility, rollback, and failure-mode handling.
+
+A plan is approved only when every dimension passes with no blocking issues. Escalate to `full` mode for public API, migrations, security, data loss, concurrency, cross-cutting refactors, or non-trivial code snippets.
+
+## Fallback (manual subagent dispatch)
+
+Use this path automatically when the Workflow tool is unavailable: you are **invoked from within a subagent** (the Workflow tool can only be called by the main agent — calling `workflow()` from a subagent throws), or the plan is **trivial** and a full fan-out is overkill.
+
+This fallback is manual **subagent dispatch** (Task tool), one reviewer at a time — **not** inline work by the orchestrator. You still send the review out to fresh read-only subagents; you only orchestrate the dispatch by hand instead of through the Workflow. It therefore does **not** violate coordinator-only-inline: the coordinator never performs reviewer-class work (repo inspection, snippet/symbol validation, file audits, `git diff` reading) itself.
+
+### Subagent Roles
+
+Dispatch only the roles needed for the selected mode (same dimensions as above):
 
 1. **spec-coverage-reviewer** - maps spec requirements to plan tasks and verification steps.
 2. **plan-correctness-reviewer** - checks file paths, task order, commands, dependencies, and stale references.
 3. **snippet-reviewer** - checks imports, symbols, tests, function names, and code snippets against the repo.
-4. **risk-reviewer** - checks migrations, security, data loss, concurrency, public APIs, rollback, and observability.
+4. **risk-reviewer** - checks migrations, data loss, concurrency, public APIs, rollback, and observability.
+5. **security-reviewer** - checks security-sensitive changes (authn/authz, secrets, input validation, injection, unsafe external calls) and their compatibility, rollback, and failure-mode handling.
 
-Each subagent must be read-only.
+Each subagent must be read-only. These five roles mirror the Workflow's dimensions (full mode runs all five; lighter modes run a subset).
 
-## Subagent Prompt Shape
+### Subagent Prompt Shape
 
 ```text
 You are reviewing a plan, not implementing code.
@@ -73,20 +127,6 @@ After each subagent returns:
 2. Save it to `review-findings.md` or coordinator notes.
 
 Each Task subagent returns its result and terminates on its own. Keep only its compact receipt — never carry its raw working context, file dumps, or transcript forward. If follow-up is needed, dispatch a fresh subagent with the prior result and the exact follow-up scope.
-
-## Review Criteria
-
-A plan is approved only when:
-
-- every spec requirement maps to at least one task
-- every behavior change has a verification step
-- no task adds unrequested scope without approval
-- existing files and symbols are real
-- new files are created before they are used
-- commands are concrete and runnable
-- task order respects dependencies
-- high-risk changes include compatibility, rollback, and failure-mode handling
-- no placeholders or hand-waves remain
 
 ## Coordinator Duties
 
@@ -125,15 +165,13 @@ Cap each receipt at **max 1 round** of coordinator edit-and-re-review. After you
 
 Escalation outcomes follow the shared cycle-limit doctrine (see `superpowers:subagent-driven-development`): `approved-amended-plan` | `human-decision-required` | `task-removed`.
 
-## Fallback
+## Coordinator-only-inline guardrail
 
-Inline review is **coordinator-only** and allowed **only when the human partner explicitly asks** to work inline — never as an automatic reaction to the Task tool being unavailable. Label it clearly as fallback mode.
+Neither path lets the coordinator do reviewer-class work itself. On the **Default: Workflow** path the reviewing happens inside the Workflow's agents; on the **Fallback (manual subagent dispatch)** path it happens inside hand-dispatched Task subagents. The coordinator never inspects the repo, validates snippets/symbols, audits files, or reads `git diff` in place of a reviewer.
 
-Inline fallback is limited to lightweight coordinator-class checks against the saved spec, context pack, and plan:
+Inline coordinator work is allowed **only when the human partner explicitly asks** to work inline — never as an automatic reaction to a tool being unavailable. When asked, it is limited to lightweight coordinator-class checks against the saved spec, context pack, and plan:
 
 - plan structure, placeholders, and obvious internal contradictions
 - contradiction of the plan against the approved spec
 
-The coordinator must **not** do reviewer-subagent-class work inline: no repo inspection, no snippet/symbol validation, no file audits, no `git diff` reading. That work goes to fresh read-only subagents.
-
-If reviewer-subagent-class work (snippet, symbol, or repo inspection) is needed but the Task tool is genuinely unavailable, **escalate / hard-stop** — do not perform it inline. The coordinator never substitutes itself for a subagent.
+If reviewer-class work (snippet, symbol, or repo inspection) is needed but both the Workflow tool and the Task tool are genuinely unavailable, **escalate / hard-stop** — do not perform it inline. The coordinator never substitutes itself for a reviewer.

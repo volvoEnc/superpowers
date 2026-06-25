@@ -9,6 +9,69 @@ description: Use when an approved spec or requirements artifact exists and imple
 
 The main agent is the orchestrator, not the plan author. It prepares durable inputs, dispatches fresh subagents (Task tool), captures their compact outputs, and stores artifacts. Each Task subagent returns its result and terminates on its own — keep only its compact result/receipt, never its raw working context. When subagents are available, do not write or review the implementation plan inline, and default to subagent-driven execution rather than inline.
 
+## Default: Workflow
+
+For non-trivial work, the default authoring path is the shipped Workflow script. The main agent (coordinator) runs it directly — Workflow is invokable only by the main agent, never from inside a subagent.
+
+The three bundled paths are resolved at skill-load time (via the `${CLAUDE_SKILL_DIR}` substitution) and printed here:
+
+```!
+echo "scriptPath=${CLAUDE_SKILL_DIR}/write-plan.workflow.js"
+echo "reviewWorkflowPath=$(dirname "${CLAUDE_SKILL_DIR}")/reviewing-plans/review-plan.workflow.js"
+echo "templatesPath=${CLAUDE_SKILL_DIR}/SKILL.md"
+```
+
+Use exactly the three paths printed above — they are deterministic absolute paths to files bundled with this skill, not guesses:
+
+- `scriptPath` — the write-plan workflow to launch.
+- `reviewWorkflowPath` — the sibling reviewing-plans script; pass it in `args` so the child review workflow inside `write-plan.workflow.js` can be located.
+- `templatesPath` — this SKILL.md (it holds the overview/task/status/context-pack templates); pass it in `args` so the Scout and Author subagents read the real templates from disk instead of guessing the structure (they are told not to use chat history).
+
+If no `scriptPath=…`/`reviewWorkflowPath=…`/`templatesPath=…` lines were printed above (skill shell injection disabled by policy, e.g. `disableSkillShellExecution`), do **not** guess a path — use the manual fallback (subagent dispatch) below, or ask the human.
+
+Run it:
+
+```text
+Workflow({
+  scriptPath: "<scriptPath printed above>",
+  args: {
+    specPath: "<absolute path to approved spec>",
+    planDir: "<absolute path to target plan directory>",
+    repoRoot: "<absolute repo root>",
+    reviewWorkflowPath: "<reviewWorkflowPath printed above>",
+    templatesPath: "<templatesPath printed above>",
+    // Optional authoritative inputs (see Source of Truth) — pass when present, else omit:
+    decisionPackPath: "<absolute path to decision pack / phase handoff, if present>",
+    constraints: "<explicit human constraints, as text, if any>"
+  }
+})
+```
+
+**Pass the authoritative inputs.** When the session has a decision pack / phase handoff artifact or explicit human constraints (see [Source of Truth](#source-of-truth)), pass them via `decisionPackPath` / `constraints` — the workflow threads them to both the Scout and the Author, exactly as the manual fallback does. Omitting them when they exist would let the plan drop required constraints. The approved spec is the only mandatory input; these two are optional and omitted when absent.
+
+The script runs Scout → Author → Review (the Review phase calls the reviewing-plans workflow via `reviewWorkflowPath`) and returns `{ planDir, review }`.
+
+### Coordinator patch loop (not in the script)
+
+After the workflow returns `{ planDir, review }`, the coordinator (main agent) handles patching — the script does **not** patch.
+
+1. If `review` reports blocking findings, the coordinator applies concrete plan edits for them. **Max 1 round.**
+2. Then re-run the review workflow **once**. Use a mode **no narrower than the dimensions that raised the fixed findings**: re-run in the **same mode as the original review**, and use `full` if any resolved blocker was in `risk` or `security`. Do **not** downgrade to `targeted` — a narrower set would skip the very dimension (e.g. `risk`/`security`) that raised the blocker, so the fix could not be verified.
+
+   ```text
+   // reReviewMode = the original review's mode, or "full" if a fixed finding was in risk/security
+   Workflow({
+     scriptPath: "<reviewWorkflowPath printed above>",
+     args: { planDir, specPath, contextPackPath, repoRoot, mode: reReviewMode }
+   })
+   ```
+
+3. If the targeted re-review surfaces a **new blocking issue**, stop and escalate as `human-decision-required` — do not start another patch/re-review round. Non-blocking findings are noted and do not gate execution. Escalation outcomes follow the shared cycle-limit doctrine (see `superpowers:reviewing-plans`).
+
+Then proceed to the Approval gate and Execution Handoff below.
+
+If the Workflow tool is unavailable — this skill is running from inside a subagent, there is no main loop, or the plan is trivial — fall back to manual subagent dispatch (see "## Fallback (manual subagent dispatch)").
+
 ## Source of Truth
 
 Use saved artifacts, not chat history.
@@ -38,7 +101,9 @@ docs/superpowers/plans/YYYY-MM-DD-<feature-name>/
 
 Single-file plans are allowed only for tiny changes. The default is a plan directory.
 
-## Orchestrated Planning Flow
+## Fallback (manual subagent dispatch)
+
+Use this path automatically when the Workflow tool is unavailable: this skill is invoked from inside a subagent (Workflow nests only one level), there is no main loop, or the plan is trivial. This is **manual subagent dispatch** (Task tool, one at a time) — not inline orchestrator work. The coordinator still routes artifacts and captures receipts; the scout, author, and reviewer work always goes to fresh subagents.
 
 ### 1. Prepare inputs
 
@@ -91,13 +156,17 @@ After each reviewer returns, capture its compact receipt and discard its raw wor
 
 The main agent may patch plan text only to apply concrete reviewer findings. If the plan changed materially, dispatch a fresh targeted reviewer for changed sections plus dependencies. Do not re-run full review for typo-only edits.
 
-### 6. Approval gate (conditional)
+## Approval Gate (conditional)
 
-Plan review (`superpowers:reviewing-plans`) always runs — only the human approval step is conditional.
+Applies to both the Default Workflow path and the manual fallback. Plan review (`superpowers:reviewing-plans`) always runs — only the human approval step is conditional.
 
 Auto-proceed when the review receipt is `approved` with no open blockers: log the clean review and continue straight to Execution Handoff without asking. The approved spec is the single human gate; after it, the orchestrator runs to an open PR without further approval stops.
 
 Require explicit human approval only when the review returns `issues-found` or `blocked`, or when the human partner pre-requested a plan gate. Unresolved blockers escalate per the cycle limits (see `superpowers:reviewing-plans`), they do not silently auto-proceed.
+
+## Templates
+
+These templates (context-pack, plan overview, task file, status) are the shared authoring contract. The Author phase of `write-plan.workflow.js` uses them, and the manual fallback uses them too — keep both paths consistent with what follows.
 
 ## Context Pack Template
 
@@ -221,9 +290,11 @@ Log the handoff:
 Plan complete and saved to <plan overview>. Review status: <approved/issues-found>. Executing subagent-driven per default.
 ```
 
-## Fallback
+## Coordinator boundary (when subagents are also unavailable)
 
-The fallback is coordinator-only. Inline work is limited to coordination and state (dispatching, capturing receipts, writing artifacts) and is allowed only when the human partner explicitly asks you to work inline — never as an automatic response to the Task tool being unavailable.
+The manual fallback above is still subagent dispatch. If the Task tool itself is genuinely unavailable, the coordinator does **not** silently take over subagent work.
+
+Inline work is limited to coordination and state (dispatching, capturing receipts, writing artifacts) and is allowed only when the human partner explicitly asks you to work inline — never as an automatic response to the Task tool being unavailable.
 
 Do not perform subagent-class work inline: no repo inspection, no snippet checking, no file audits, no context-pack generation. That work always goes to fresh read-only subagents.
 

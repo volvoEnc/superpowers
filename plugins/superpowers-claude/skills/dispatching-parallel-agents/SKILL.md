@@ -72,6 +72,12 @@ the safe default — do not reach for Workflow just because it exists.
 - **Homogeneous batch fix:** apply the identical fix recipe across many independent
   files where each result is "patched / not patched" with the same shape.
 
+**Shipped examples (real deterministic Workflows):** the plan skills ship two
+parameterized scripts you can read as concrete references —
+`superpowers:reviewing-plans/review-plan.workflow.js` (homogeneous parallel reviewers
+over a shared rubric + adversarial verify) and
+`superpowers:writing-plans/write-plan.workflow.js` (a scout → author → review pipeline).
+
 Both are experiments to prototype on a single real workload before treating Workflow
 as anything more than an occasional opt-in.
 
