@@ -57,6 +57,8 @@ After **each task** completes (or blocks), update `state.json` in the run direct
 
 When a unit is dispatched, also track its liveness in `state.json` via the `inflight[]` entry (`deadline_s`, `promoted`, `dispatched_at`, `last_progress_at`, `restarts`) — field shapes are single-sourced in `superpowers:phase-handoff` (`## State JSON`); do not redefine them here. See `../../docs/liveness-doctrine.md` for when/how to promote and monitor a dispatched unit.
 
+**Between tasks (floor check).** Before dispatching the next unit, run `../../scripts/liveness-floor.sh <state.json>` over the open `inflight[]`. The script is detect-only — it prints `STALE` for any unit past `G × deadline_s`; the orchestrator decides the response. For each `STALE` line, enter the response path in `../../docs/liveness-doctrine.md` (§7). Do not duplicate the floor mechanics here.
+
 Each task also gets a durable **per-task receipt** at `docs/superpowers/runs/<run>/task-NNN-result.md` (NNN = zero-padded task number). The receipt captures the implementer status, what was built, test results, files changed, review verdicts, and any deferred findings. This file is the artifact — it survives compaction.
 
 **After a compaction, resume from these files, not from chat:** read `state.json` for `current_task`/`completed_tasks`/`blocked_tasks`/`last_green_commit`, and read the `task-NNN-result.md` receipts for what each completed task produced. Reconstruct the plan position from disk before dispatching the next subagent.
