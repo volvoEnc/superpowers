@@ -56,6 +56,7 @@ The main agent must not keep or forward:
 - rejected drafts
 - raw subagent working context, file dumps, or transcripts (keep only their compact results/receipts)
 - speculative implementation details not approved by the human partner
+- source files or full task files pulled in to apply a review/patch finding — patch the named plan lines from the receipt, and dispatch a fresh subagent (with that finding plus its scope) for anything needing source or task-file inspection
 
 ## Request Brief
 

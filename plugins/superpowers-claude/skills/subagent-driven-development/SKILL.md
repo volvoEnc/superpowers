@@ -7,6 +7,8 @@ description: Use when executing implementation plans with independent tasks in t
 
 Execute a reviewed implementation plan with fresh subagents. The controller keeps the project state, dispatches one bounded unit of work at a time, records each result, and only then moves forward.
 
+Under this skill, **every** implementation edit to a source file is authored by a fresh dispatched subagent — never hand-typed inline by the orchestrator. This is not a default you weigh against task size, token cost, or "I already have the context"; it is the execution mode itself. Task size is not the axis: a five-line pure function is dispatched exactly like a five-hundred-line one. The orchestrator's hands stay off source files; it coordinates, captures receipts, and dispatches. (The orchestrator still runs the sanctioned built-in mechanical-review tools — `/simplify`, `/code-review --fix` — on a task diff per "Built-In Review In The Loop"; those are review steps, not hand-authored implementation.) The only sanctioned way to run implementation inline-with-checkpoints is the explicit `superpowers:executing-plans` opt-in — see the Hard Gates.
+
 ## Start In The Current Checkout
 
 Before implementation, use `superpowers:using-git-branches` in `implementation-start` mode.
@@ -14,6 +16,17 @@ Before implementation, use `superpowers:using-git-branches` in `implementation-s
 - Work in the current checkout by default.
 - If the current branch is `main` or `master`, the branch skill creates a task branch before implementation starts.
 - Do not create a git worktree unless the human partner explicitly asks for one.
+## Hard Gates
+
+These fire **during execution**, on every task — not just when the skill is first invoked. Re-check them at the moment of each implementation edit, not once at the start. They govern **hand-authored** implementation edits; the orchestrator running the sanctioned built-in mechanical-review tools (`/simplify`, `/code-review --fix`) on a task diff per "Built-In Review In The Loop" is a review step, not a violation. They also do not touch the orchestrator's coordination writes — plan text, `state.json`, per-task receipts.
+
+1. Do not hand-author an implementation Write or Edit to a source file in the orchestrator's own context. The orchestrator never types source edits itself; it dispatches a fresh subagent that authors them. This holds for the very first task and for every task after it.
+2. Do not classify a task as "too small/simple/cheap to dispatch" and do it inline instead. Size, simplicity, and token cost are not exceptions to Gate 1 — there is no "trivial enough" threshold that unlocks hand-authored inline implementation.
+3. Do not let an already-loaded context (sources, task files, prior receipts you happen to be holding) justify an inline edit. "I already have the context" is the trap this skill exists to prevent; if you are heavy, that is a reason to re-delegate, not to inline.
+4. Do not run implementation inline unless you have **consciously and explicitly switched** to `superpowers:executing-plans` — announcing "Using executing-plans to implement this plan" — the one sanctioned inline-with-checkpoints path (which itself still delegates subagent-class sub-tasks like security fixes per its Step 2a). There is no third, ad-hoc inline path: the choice is subagent-driven (this skill) OR an explicit executing-plans switch. Freelance inline outside those two is forbidden.
+5. Do not begin the per-task loop until you have committed to one of the two sanctioned paths. Make the choice **before the first implementation edit** and hold it; drifting from dispatch into inline mid-run — task 1 inline "just this once," then carrying that inertia into tasks 2 and 3 — is the exact failure these gates block. A legitimate mid-run escalation or a genuine Task-tool outage is not drift; handle it per "Handling Status", do not silently switch to freelance inline.
+
+These gates do not override a direct human instruction: per `superpowers:using-superpowers` Instruction Priority, the human partner may explicitly direct inline work, and that instruction wins. The gates forbid the orchestrator *drifting* into inline on its own judgment, not a human choosing it.
 
 ## Subagent Lifecycle
 
@@ -26,12 +39,22 @@ dispatch subagent (Task tool) -> wait for result -> capture result
 This applies to task implementers, spec reviewers, quality reviewers, final reviewers, scouts, and investigation subagents.
 
 The written result is the artifact. If follow-up is needed, dispatch a fresh subagent with the prior result and the exact follow-up scope.
+## Token Cost Is Not A Reason To Go Inline
+
+Subagent-driven development **intentionally** spends more tokens than inline work. That is the price of the two things it buys: a **light orchestrator** (project state stays in the controller; raw working context stays in the subagents) and **independent review** (a fresh spec/quality reviewer who never saw the implementer's reasoning). Both evaporate the moment the orchestrator hand-authors a source edit itself.
+
+So a large planning/review spend is **not** a signal to switch to inline implementation. The arrow points the other way: the more tokens already burned, the **heavier** the orchestrator's context, and a heavy orchestrator is the **strongest** reason to delegate — inline only feels cheaper because the cost (a polluted controller, no independent review) is hidden, not absent.
+
+Under a "cost is not a constraint" directive this conflict resolves **toward delegation, every time**. "We already spent ~5M tokens, don't burn more" is exactly the rationalization that drift exploits — naming it is the tell, not the justification. If you are tempted to go inline to save tokens, that temptation is the proof you should dispatch a subagent.
+
+This is not a license to drift inline by another route. The only sanctioned execution paths remain subagent-driven-development (this skill, the default) and `superpowers:executing-plans` (explicit inline-with-checkpoints opt-in). Token anxiety is never a third path.
+
 
 ## Per-Task Loop
 
 For each task in the plan:
 
-1. **per this task only:** read this task file and the relevant context-pack slice — hold only the current task in context. Do not read ahead to later tasks. Discard the task text after its receipt is written (see "Maintaining Execution State").
+1. **per this task only:** read only the minimum needed to *dispatch* this task — its id, the file paths it touches, and the scope to hand the subagent. The full task text and the relevant context-pack slice go **to the implementation subagent**, not into the orchestrator's context (per Hard Gate 3, "already have the context" is not a license to go heavy or inline). Do not read ahead to later tasks. Discard whatever you read for dispatch after the receipt is written (see "Maintaining Execution State").
 2. Dispatch one implementation subagent (Task tool) with only the task text and needed context.
 3. Wait for the result.
 4. Write the result to the durable per-task receipt `docs/superpowers/runs/<run>/task-NNN-result.md` (see "Maintaining Execution State"). After compaction, read these receipt files — not chat — to recover prior results.
@@ -123,8 +146,10 @@ Never:
 - Process further tasks after a plan-wrong escalation instead of halting the run until the human responds
 - Write a per-task built-in `/code-review` result as the cacheable branch-scope `code_review_verdict` in `state.json`
 - Carry a subagent's raw working context or transcript forward instead of its compact result
+- Hand-author a source edit yourself to "save tokens" because planning/review already burned a lot — heavy orchestrator context is a reason to delegate harder, not to drift inline (see "Token Cost Is Not A Reason To Go Inline")
 - Reuse a prior subagent's result as memory in place of dispatching a fresh subagent with the exact follow-up scope
 - Let a hung/non-returning subagent block the loop forever instead of applying the time/liveness trigger (restart-fresh up to `max_restarts`, then escalate `human-decision-required`) — and never conflate the liveness pool with the content max-2-fix-attempts pool
+- Hand-author an implementation Write/Edit to a source file in the orchestrator's context instead of dispatching a fresh subagent — at the moment you reach for the editor, these thoughts mean STOP: "this task is too small to dispatch," "it's only a few lines," "I already have all the context loaded," "re-delegating would just burn more tokens," "I'll do this one inline and dispatch the rest." Each is a rationalization of the inline drift the Hard Gates forbid; dispatch, or consciously switch to `superpowers:executing-plans` — never freelance inline. (Running the built-in `/simplify` or `/code-review --fix` on a task diff is the sanctioned mechanical-review step, not hand-authored inline.)
 
 ## Integration
 

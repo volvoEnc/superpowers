@@ -20,7 +20,7 @@ This is not negotiable. This is not optional. You cannot rationalize your way ou
 This fork has three standing preferences:
 
 1. Use `superpowers:using-git-branches` for normal development. Do not create or offer git worktrees unless the human partner explicitly asks for a worktree.
-2. Keep the main agent's context clean: delegate heavy work to fresh subagents (Task tool) and keep only each subagent's compact result/receipt — never carry its raw working context, file dumps, or transcript forward. Each Task subagent returns its result and terminates on its own. If follow-up is needed, dispatch a fresh subagent with the prior result and the exact follow-up scope.
+2. Keep the main agent's context clean by delegating on the KIND of work, not its size. The criterion is never "how heavy is this task" — task size is irrelevant. The main agent (orchestrator) does coordination only; it dispatches implementation, exploration, and reading of source/task files to fresh subagents (Task tool) and keeps only each subagent's compact result/receipt — never its raw working context, file dumps, or transcript. Each Task subagent returns its result and terminates on its own; for follow-up, dispatch a fresh subagent with the prior result and the exact follow-up scope. Two things follow: (a) a one-line change is still subagent-class work — under `superpowers:subagent-driven-development` it goes to a subagent exactly like a 500-line one, and "small" or "I already have the context" are not exemptions; delegation is what keeps the orchestrator light AND buys independent review, both of which inline forfeits. (b) The ONLY sanctioned ways the orchestrator's own context touches implementation are the two execution skills: `superpowers:subagent-driven-development` (default — dispatch every task to a subagent) and `superpowers:executing-plans` (explicit opt-in — inline-with-checkpoints). Ad-hoc freelance inline implementation outside those two is forbidden. Before your first hand-authored Write/Edit to a source file in an execution phase, you MUST have consciously entered one of those two skills — if you have not, stop and enter one.
 3. Do not offer or use the visual companion. Brainstorming is text-only.
 
 ## Instruction Priority
@@ -99,6 +99,9 @@ These thoughts mean STOP—you're rationalizing:
 | "This doesn't count as a task" | Action = task. Check for skills. |
 | "The skill is overkill" | Simple things become complex. Use it. |
 | "I'll just do this one thing first" | Check BEFORE doing anything. |
+| "I already have the context, inline is cheaper" | Execution-phase trap. The heavier you are, the MORE you must delegate — that pull is exactly what subagent-driven prevents. Cost is not the axis; dispatch a subagent. |
+| "It's just one small function, I'll write it inline" | Size is irrelevant (rule #2). A small change is subagent-class work — dispatch it under subagent-driven, or enter executing-plans on purpose. |
+| "The skill check is for the start; I'm mid-execution" | Red flags fire DURING execution too, not only at invocation. A hand-authored Write outside subagent-driven / executing-plans is the violation — stop before it. |
 | "This feels productive" | Undisciplined action wastes time. Skills prevent this. |
 | "I know what that means" | Knowing the concept ≠ using the skill. Invoke it. |
 
