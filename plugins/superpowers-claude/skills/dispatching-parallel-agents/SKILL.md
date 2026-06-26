@@ -131,23 +131,41 @@ Each agent gets:
 - **Constraints:** Don't change other code
 - **Expected output:** Summary of what you found and fixed
 
-### 3. Dispatch in Parallel
+### 3. Dispatch in Parallel (background, then yield)
+
+Dispatch each independent agent with `run_in_background: true`, then **end your
+turn immediately** — hand the turn back to your human partner so the input field
+stays free while the fan-out runs. Do not block on a synchronous `await`.
 
 ```typescript
 // In Claude Code / AI environment
-Task("Fix agent-tool-abort.test.ts failures")
-Task("Fix batch-completion-behavior.test.ts failures")
-Task("Fix tool-approval-race-conditions.test.ts failures")
-// All three run concurrently
+Task("Fix agent-tool-abort.test.ts failures", { run_in_background: true })
+Task("Fix batch-completion-behavior.test.ts failures", { run_in_background: true })
+Task("Fix tool-approval-race-conditions.test.ts failures", { run_in_background: true })
+// All three run in the background; you stamp one inflight[] entry per agent,
+// post a short "launched N agents, input is free" message, and yield the turn.
 ```
 
-### 4. Review and Integrate
+Stamp one `inflight[]` entry per dispatched agent (field shapes live in
+`superpowers:phase-handoff`, not here), then yield. Your human partner can type
+while the fan-out works; their messages and your harvests interleave naturally
+over the shared `inflight[]`.
 
-When agents return:
-- Read each summary
-- Verify fixes don't conflict
-- Run full test suite
-- Integrate all changes
+For the full pattern (the three phases, the degenerate-to-synchronous boundary,
+the harness disclaimer, and the wall-clock floor / batch-`ScheduleWakeup` backstop),
+see `../../docs/dispatch-yield-doctrine.md`. (Terse pointer; the details live there, not here.)
+
+### 4. Harvest and Integrate
+
+Harvest results as completion notifications re-invoke you — not by blocking:
+- On each completion, read that agent's **compact receipt** (`output_path`),
+  never its raw transcript
+- Remove its entry from `inflight[]` (reconcile incrementally)
+- If `inflight[]` is not yet empty, yield the turn again and wait for the next one
+- Once `inflight[]` is empty, the whole batch is in:
+  - Verify fixes don't conflict
+  - Run full test suite
+  - Integrate all changes and report a single integration result
 
 ## Agent Prompt Structure
 
