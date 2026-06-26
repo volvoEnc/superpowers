@@ -81,18 +81,37 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Check 3: fresh fixture (now >= latest dispatched_at) -> no STALE line.
-# now = 2026-06-24T10:11:00Z is >= the latest dispatched_at (task-005 @ 10:10:00Z),
-# so every elapsed is >= 0 and within budget.
+# Check 3: fresh -> no STALE line. Two sub-cases that are BOTH internally consistent
+# with the literal contract (elapsed > G*deadline_s applies to every entry, including
+# kind=sync — confirmed against doctrine §4.4 and the spec's "Логика" section).
+#
+#   3a) The real fresh fixture at the spec's now=2026-06-24T10:00:00Z (acceptance
+#       criterion 3, "now близко к dispatched_at"): every elapsed is within budget.
+#       (Note: now=10:11:00Z would make task-004 (sync, deadline_s=120) genuinely
+#        stale — elapsed 360 > budget 240 — so that instant is NOT a valid "all fresh"
+#        witness. The spec instant is.)
+#   3b) A synthetic entry with a strictly POSITIVE elapsed comfortably inside budget,
+#       so freshness is proven by real headroom to the deadline, not by negative time.
 # ---------------------------------------------------------------------------
 if [ -x "$SCRIPT" ]; then
-  out="$(LIVENESS_NOW=2026-06-24T10:11:00Z bash "$SCRIPT" \
+  out="$(LIVENESS_NOW=2026-06-24T10:00:00Z bash "$SCRIPT" \
         tests/claude-code/fixtures/state-inflight-fresh.json 2>/dev/null || true)"
   if printf '%s\n' "$out" | grep -q '^STALE'; then
-    echo "  [FAIL] fresh fixture unexpectedly printed STALE; got: $out"
+    echo "  [FAIL] 3a fresh fixture unexpectedly printed STALE; got: $out"
     fail=1
   else
-    echo "  [PASS] fresh fixture prints no STALE"
+    echo "  [PASS] 3a fresh fixture (now=spec 10:00) prints no STALE"
+  fi
+
+  # 3b: dispatched_at=10:00:00Z, now=10:01:00Z -> elapsed 60s, deadline_s=600 -> budget 1200.
+  # Positive elapsed, far from stale: freshness by headroom, not by negative time.
+  st_fresh_pos="$(make_state '{"inflight":[{"task":"fresh-pos.md","kind":"bg-agent","promoted":true,"deadline_s":600,"dispatched_at":"2026-06-24T10:00:00Z","last_progress_at":"2026-06-24T10:00:00Z","output_path":null,"restarts":0}]}')"
+  out_fp="$(LIVENESS_NOW=2026-06-24T10:01:00Z bash "$SCRIPT" "$st_fresh_pos" 2>/dev/null || true)"
+  if printf '%s\n' "$out_fp" | grep -q '^STALE'; then
+    echo "  [FAIL] 3b positive-elapsed-within-budget printed STALE; got: $out_fp"
+    fail=1
+  else
+    echo "  [PASS] 3b positive elapsed (60s) within budget (1200s) -> no STALE"
   fi
 else
   echo "  [FAIL] check 3 skipped — script missing (RED)"
