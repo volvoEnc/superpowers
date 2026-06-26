@@ -151,6 +151,17 @@ Stamp one `inflight[]` entry per dispatched agent (field shapes live in
 while the fan-out works; their messages and your harvests interleave naturally
 over the shared `inflight[]`.
 
+**Optional floor accelerator (`Monitor`).** When the fan-out starts, you **may**
+arm a `Monitor` on `../../scripts/liveness-floor.sh <state.json>` as a push
+accelerator for the floor check (detect-only — the script signals `STALE`, you
+decide the response per `../../docs/liveness-doctrine.md` §7). This is optional,
+not required. **Visible degradation, not a silent hole:** if `Monitor` never
+armed or died, the floor **does not disappear** — it keeps ticking on the
+boundaries (between-task / resume). Losing the push accelerator means "floor only
+on the boundaries," not "floor gone"; that is the expected degraded mode, not a
+gap. Constants and the floor mechanics live in `../../docs/dispatch-yield-doctrine.md`
+and `../../docs/liveness-doctrine.md`, not here.
+
 For the full pattern (the three phases, the degenerate-to-synchronous boundary,
 the harness disclaimer, and the wall-clock floor / batch-`ScheduleWakeup` backstop),
 see `../../docs/dispatch-yield-doctrine.md`. (Terse pointer; the details live there, not here.)

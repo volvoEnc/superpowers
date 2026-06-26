@@ -183,8 +183,9 @@ When resuming from a handoff:
 2. Read only the artifacts listed under Source of Truth.
 3. Check current git state against the handoff.
 4. If `current_task` is set in `state.json`, confirm the remaining work for that task before acting on Next Action.
-5. Continue from Next Action.
-6. If state drifted, update the handoff before continuing.
+5. **Run the liveness floor against `state.json`.** If `inflight[]` is non-empty, run `../../scripts/liveness-floor.sh <state.json>` — it is detect-only: it flags `STALE` units (`now - dispatched_at` past `G × deadline_s`) and the orchestrator decides the response. For each `STALE` line, enter the response path in `../../docs/liveness-doctrine.md` (§7). This is the only liveness signal that survives compaction (§8); the script does not change `state.json`.
+6. Continue from Next Action.
+7. If state drifted, update the handoff before continuing.
 
 ## Red Flags
 
