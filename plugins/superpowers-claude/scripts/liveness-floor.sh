@@ -2,11 +2,15 @@
 # liveness-floor.sh — detect-only wall-clock floor over a state.json `inflight[]`.
 #
 # Turns doctrine §4.4 (resume floor) and §5.2 (bg-bash mtime staleness) into a
-# checkable primitive: for every in-flight unit it computes elapsed = now - dispatched_at
-# and, when elapsed > G x deadline_s, prints a one-line STALE report. For kind == "bg-bash"
-# it additionally suspects the unit when its output file has not been touched for longer
-# than S_bash seconds. DETECT-ONLY: it never restarts units, never stops or queries them
-# via harness task ops, and never mutates state.json — it only reads and prints.
+# checkable primitive. The floor is measured over PROGRESS, not dispatch: for every
+# in-flight unit it takes progress_ref = max(dispatched_at, last_progress_at) and, for
+# signal-less kinds (bg-agent / sync / bg-bash without an existing output file), prints a
+# one-line STALE report when elapsed = now - progress_ref exceeds G x deadline_s. For
+# kind == "bg-bash" WITH an existing output file, the file's mtime is the progress signal:
+# the unit is STALE iff its output has not been touched for longer than S_bash seconds, and
+# the deadline floor does not apply (a fresh mtime proves liveness regardless of dispatch
+# age). DETECT-ONLY: it never restarts units, never stops or queries them via harness task
+# ops, and never mutates state.json — it only reads and prints.
 #
 # Usage:   liveness-floor.sh <path-to-state.json>
 # Env:
@@ -117,32 +121,42 @@ for entry in inflight:
     task = entry.get("task")
     kind = entry.get("kind")
     dispatched_raw = entry.get("dispatched_at")
+    last_progress_raw = entry.get("last_progress_at")
     deadline_s = entry.get("deadline_s")
     output_path = entry.get("output_path")
 
-    if dispatched_raw is None or deadline_s is None:
+    # dispatched_at is mandatory; an absent/unparseable value -> skip (do not guess).
+    if dispatched_raw is None:
         continue
     dispatched = parse_instant(str(dispatched_raw))
     if dispatched is None:
+        continue
+
+    # last_progress_at refines the floor (§4.4): elapsed is measured from progress, not
+    # dispatch. Absent -> fall back to dispatched. max() guards against a regressed value
+    # (last_progress_at earlier than dispatched_at) so progress can never *shorten* elapsed.
+    progress = dispatched
+    if last_progress_raw is not None:
+        lp = parse_instant(str(last_progress_raw))
+        if lp is not None and lp > progress:
+            progress = lp
+
+    # deadline_s is mandatory; absent/non-numeric -> skip.
+    if deadline_s is None:
         continue
     try:
         deadline_s = float(deadline_s)
     except (TypeError, ValueError):
         continue
 
-    elapsed = (now - dispatched).total_seconds()
+    # elapsed is reported relative to progress_ref, not dispatch.
+    elapsed = (now - progress).total_seconds()
     budget = G * deadline_s
 
-    # Deadline floor. Strict `>` means a negative elapsed (dispatched_at in the future vs now,
-    # i.e. clock skew) can never be stale — the unit "has not started yet".
-    if elapsed > budget:
-        lines.append(
-            "STALE %s %ds/%ds %s" % (task, int(elapsed), int(budget), kind)
-        )
-        continue
-
-    # bg-bash mtime staleness (§5.2). Only for bg-bash, only when output_path exists on disk.
-    # A signal-less kind (bg-agent / sync) or a missing output file -> mtime is uninformative.
+    # bg-bash with an existing output file: mtime is the progress signal (§5.2). A fresh
+    # mtime proves liveness, so the deadline floor does NOT apply here — only the mtime
+    # window decides. (A bg-bash without an existing output file falls through to the
+    # deadline floor below, like any other signal-less kind.)
     if kind == "bg-bash" and output_path:
         try:
             mtime = os.stat(output_path).st_mtime  # literal path; never executed by a shell
@@ -156,6 +170,15 @@ for entry in inflight:
                     "STALE %s %ds/%ds %s output stale %ds>%ds"
                     % (task, int(elapsed), int(budget), kind, int(age), int(S_BASH))
                 )
+            continue
+
+    # Deadline floor for signal-less kinds (bg-agent / sync / bg-bash without an existing
+    # output file). Strict `>` means a negative elapsed (progress_ref in the future vs now,
+    # i.e. clock skew) can never be stale — the unit "has not started yet".
+    if elapsed > budget:
+        lines.append(
+            "STALE %s %ds/%ds %s" % (task, int(elapsed), int(budget), kind)
+        )
 
 for line in lines:
     print(line)

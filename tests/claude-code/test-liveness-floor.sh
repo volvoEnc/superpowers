@@ -279,6 +279,74 @@ else
   fail=1
 fi
 
+# ---------------------------------------------------------------------------
+# Check 8: progress-based floor (doctrine §4.4 + inflight[].last_progress_at).
+# The floor must measure elapsed from PROGRESS (max(dispatched_at, last_progress_at)),
+# not from dispatched_at — otherwise a live unit that reported progress is falsely STALE.
+#   8a) bg-agent: dispatched long ago (> budget) BUT last_progress_at recent (within budget)
+#       -> NOT stale  [core of the fix]
+#   8b) bg-agent: dispatched long ago AND last_progress_at also long ago (> budget) -> STALE
+#   8c) bg-bash: dispatched long ago (> budget), output_path EXISTS with FRESH mtime
+#       (age < S_bash) -> NOT stale  (mtime is bg-bash's progress signal; deadline-floor
+#       does not apply to a bg-bash with a live output file)  [bg-bash part of the fix]
+#   8d) bg-bash: output_path EXISTS with STALE mtime (age > S_bash) -> STALE
+# ---------------------------------------------------------------------------
+if [ -x "$SCRIPT" ]; then
+  PNOW=2026-06-24T12:00:00Z
+  # deadline_s=100, G=2 -> budget 200. dispatched 11:50:00Z (600s ago, > budget).
+  # 8a: last_progress_at 11:59:00Z (60s ago, well within budget) -> NOT stale.
+  st_prog_fresh="$(make_state '{"inflight":[{"task":"prog-fresh.md","kind":"bg-agent","promoted":true,"deadline_s":100,"dispatched_at":"2026-06-24T11:50:00Z","last_progress_at":"2026-06-24T11:59:00Z","output_path":null,"restarts":0}]}')"
+  out_pf="$(LIVENESS_NOW="$PNOW" bash "$SCRIPT" "$st_prog_fresh" 2>/dev/null || true)"
+  if printf '%s\n' "$out_pf" | grep -q '^STALE'; then
+    echo "  [FAIL] 8a bg-agent with recent last_progress_at unexpectedly STALE; got: $out_pf"
+    fail=1
+  else
+    echo "  [PASS] 8a bg-agent dispatched-old but progress-recent -> not stale"
+  fi
+
+  # 8b: last_progress_at 11:50:00Z (== dispatched, 600s ago, > budget 200) -> STALE.
+  st_prog_stale="$(make_state '{"inflight":[{"task":"prog-stale.md","kind":"bg-agent","promoted":true,"deadline_s":100,"dispatched_at":"2026-06-24T11:50:00Z","last_progress_at":"2026-06-24T11:50:00Z","output_path":null,"restarts":0}]}')"
+  out_ps="$(LIVENESS_NOW="$PNOW" bash "$SCRIPT" "$st_prog_stale" 2>/dev/null || true)"
+  if printf '%s\n' "$out_ps" | grep -q '^STALE prog-stale.md'; then
+    echo "  [PASS] 8b bg-agent dispatched-old and progress-old -> STALE"
+  else
+    echo "  [FAIL] 8b bg-agent with old last_progress_at should be STALE; got: $out_ps"
+    fail=1
+  fi
+
+  # 8c/8d: bg-bash dispatched 11:50:00Z (600s ago, > budget 200), output file EXISTS.
+  # mtime decides: fresh (60s < 120) -> not stale; stale (180s > 120) -> STALE.
+  bash_disp=2026-06-24T11:50:00Z
+  out_bash_fresh="$WORK/prog-bash-fresh.log"
+  out_bash_stale="$WORK/prog-bash-stale.log"
+  : > "$out_bash_fresh"
+  : > "$out_bash_stale"
+  set_mtime_age "$out_bash_fresh" "$PNOW" 60
+  set_mtime_age "$out_bash_stale" "$PNOW" 180
+
+  st_bash_fresh="$(make_state "{\"inflight\":[{\"task\":\"prog-bash-fresh.md\",\"kind\":\"bg-bash\",\"promoted\":true,\"deadline_s\":100,\"dispatched_at\":\"$bash_disp\",\"last_progress_at\":\"$bash_disp\",\"output_path\":\"$out_bash_fresh\",\"restarts\":0}]}")"
+  st_bash_stale="$(make_state "{\"inflight\":[{\"task\":\"prog-bash-stale.md\",\"kind\":\"bg-bash\",\"promoted\":true,\"deadline_s\":100,\"dispatched_at\":\"$bash_disp\",\"last_progress_at\":\"$bash_disp\",\"output_path\":\"$out_bash_stale\",\"restarts\":0}]}")"
+
+  out_bf="$(LIVENESS_NOW="$PNOW" bash "$SCRIPT" "$st_bash_fresh" 2>/dev/null || true)"
+  out_bs="$(LIVENESS_NOW="$PNOW" bash "$SCRIPT" "$st_bash_stale" 2>/dev/null || true)"
+
+  if printf '%s\n' "$out_bf" | grep -q '^STALE'; then
+    echo "  [FAIL] 8c bg-bash dispatched-old but mtime-fresh unexpectedly STALE; got: $out_bf"
+    fail=1
+  else
+    echo "  [PASS] 8c bg-bash dispatched-old, output mtime fresh -> not stale"
+  fi
+  if printf '%s\n' "$out_bs" | grep -q '^STALE prog-bash-stale.md'; then
+    echo "  [PASS] 8d bg-bash output mtime stale (180s > 120) -> STALE"
+  else
+    echo "  [FAIL] 8d bg-bash with stale output mtime should be STALE; got: $out_bs"
+    fail=1
+  fi
+else
+  echo "  [FAIL] check 8 skipped — script missing (RED)"
+  fail=1
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo "=== FAILURES ==="
   exit 1
