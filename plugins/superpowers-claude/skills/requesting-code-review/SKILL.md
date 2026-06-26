@@ -21,6 +21,8 @@ Dispatch a code reviewer subagent to catch issues before they cascade. The revie
 - Before refactoring (baseline check)
 - After fixing complex bug
 
+При подготовке к ревью/мержу оформляй коммиты, заголовок и описание PR и имя ветки по `superpowers:commit-pr-conventions` (линтер `check-commit-conventions.sh`) — чтобы артефакты, которые увидит ревьюер, уже были по конвенции.
+
 ## Built-in code review vs subagent reviewers
 
 Two complementary tools. Choose by what kind of judgment is needed.

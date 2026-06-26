@@ -134,6 +134,8 @@ gh pr create --base "$BASE" --title "<title>" --body "<summary and test plan>"
 
 `$BASE` is the repository default branch resolved in Step 4 — always pass it explicitly (never omit `--base`).
 
+Заголовок и тело PR оформляй по `superpowers:commit-pr-conventions` (`<type>: <subject> [TICKET]`; блоки описания Задача → Проблема → Решение → Риски; без подписей бота). Прогони заголовок через линтер: `check-commit-conventions.sh pr-title "<title>"`.
+
 ### Keep branch
 
 Report that the branch remains in the current checkout.
