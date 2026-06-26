@@ -154,7 +154,7 @@ After each reviewer returns, capture its compact receipt and discard its raw wor
 
 ### 5. Patch and re-review
 
-The main agent may patch plan text only to apply concrete reviewer findings. If the plan changed materially, dispatch a fresh targeted reviewer for changed sections plus dependencies. Do not re-run full review for typo-only edits.
+The main agent may patch plan text only to apply concrete reviewer findings. **Patching obeys the Clean Context Contract too:** to apply a finding the main agent reads only the receipt's specific finding and the exact plan lines it points at — it must **not** pull source files, full task files, or the reviewer's raw working context into its own context. If applying a finding needs source inspection or a non-trivial task-file rewrite, dispatch a fresh subagent with that one finding plus its scope and keep only the compact result. If the plan changed materially, dispatch a fresh targeted reviewer for changed sections plus dependencies. Do not re-run full review for typo-only edits.
 
 ## Approval Gate (conditional)
 
