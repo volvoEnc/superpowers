@@ -51,6 +51,8 @@ git checkout -b <prefix>/<short-task-slug>
 
 If that name exists, append `-2` or today's date. If the tree was dirty, report that the uncommitted files moved onto the new branch.
 
+Для веток, которые станут PR под конвенцией форка, имя оформляй по `superpowers:commit-pr-conventions` — строго `feature/fix/hotfix` + kebab-slug + опц. `-TICKET` (напр. `fix/lk-design-ui-MBSD-3123`); проверь линтером `check-commit-conventions.sh branch "<name>"`. Префиксы `chore/`/`spike/` выше остаются для локальных процессных/исследовательских веток, которые не идут в PR под конвенцией.
+
 ## Step 3: Existing Task Branch
 
 If already on a non-main branch, continue there. If the tree is dirty, report dirty files before writing anything new. If they look unrelated, ask whether to continue, stash, or stop.
