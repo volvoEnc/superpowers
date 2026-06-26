@@ -1,7 +1,7 @@
 {
   "name": "superpowers",
   "description": "Personal Superpowers fork for Claude Code: artifact-first planning, branch-based development, subagent-driven orchestration, and text-only brainstorming. Adapted from the Codex personal fork.",
-  "version": "5.1.0-personal.1",
+  "version": "5.1.0-personal.2",
   "author": {
     "name": "volvoEnc",
     "url": "https://github.com/volvoEnc"
