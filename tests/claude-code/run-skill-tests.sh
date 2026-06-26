@@ -75,6 +75,7 @@ done
 tests=(
     "test-subagent-driven-development.sh"
     "test-liveness-doctrine.sh"
+    "test-liveness-floor.sh"
 )
 
 # Integration tests (slow, full execution)
