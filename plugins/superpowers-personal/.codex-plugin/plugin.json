@@ -1,6 +1,6 @@
 {
   "name": "superpowers-personal",
-  "version": "5.1.0-personal.1",
+  "version": "5.1.0-personal.2",
   "description": "Personal Superpowers fork with artifact-first planning, branch-based development, Codex subagent cleanup, and text-only brainstorming.",
   "author": {
     "name": "volvoEnc",
@@ -20,13 +20,17 @@
     "debugging",
     "code-review",
     "workflow",
-    "codex"
+    "codex",
+    "commit-pr-conventions",
+    "frontend-design",
+    "web-interface-guidelines",
+    "webapp-testing"
   ],
   "skills": "./skills/",
   "interface": {
     "displayName": "Superpowers Personal",
     "shortDescription": "Personal planning, TDD, debugging, and branch-first workflows for Codex",
-    "longDescription": "Use Superpowers Personal to guide Codex through text-only brainstorming, artifact-first planning, plan review, test-driven development, branch-based execution, immediate subagent cleanup, code review, and finish-the-branch workflows.",
+    "longDescription": "Use Superpowers Personal to guide Codex through text-only brainstorming, artifact-first planning, plan review, test-driven development, branch-based execution, immediate subagent cleanup, code review, finish-the-branch workflows, commit/PR conventions, distinctive frontend design, web interface audits, and local webapp testing.",
     "developerName": "volvoEnc",
     "category": "Coding",
     "capabilities": [
